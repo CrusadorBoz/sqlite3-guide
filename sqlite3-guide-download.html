@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQLite3 — Complete Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --wp-blue: #2271b1;
+    --wp-blue-dark: #135e96;
+    --wp-blue-light: #e8f0fb;
+    --wp-nav-bg: #1d2327;
+    --wp-nav-text: #a7aaad;
+    --wp-nav-active: #72aee6;
+    --wp-sidebar-w: 220px;
+    --wp-header-h: 56px;
+    --bg: #f0f0f1;
+    --surface: #ffffff;
+    --border: #c3c4c7;
+    --text: #1d2327;
+    --text-muted: #50575e;
+    --text-light: #787c82;
+    --code-bg: #1d2327;
+    --code-text: #72aee6;
+    --success: #00a32a;
+    --warning: #dba617;
+    --error: #d63638;
+    --radius: 4px;
+  }
+
+  html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+  /* ── WP Admin Bar ── */
+  .wp-admin-bar {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--wp-header-h);
+    background: var(--wp-nav-bg); display: flex; align-items: center;
+    padding: 0 20px; gap: 16px; z-index: 100; border-bottom: 1px solid #3c434a;
+  }
+  .wp-logo { display: flex; align-items: center; gap: 10px; color: #a7aaad; font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+  .wp-logo svg { width: 28px; height: 28px; fill: #a7aaad; }
+  .wp-logo span { color: #72aee6; }
+  .wp-bar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .wp-bar-badge { background: var(--wp-blue); color: white; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; }
+
+  /* ── WP Sidebar ── */
+  .wp-sidebar {
+    position: fixed; top: var(--wp-header-h); left: 0; bottom: 0;
+    width: var(--wp-sidebar-w); background: var(--wp-nav-bg);
+    overflow-y: auto; z-index: 90; border-right: 1px solid #3c434a;
+  }
+  .wp-sidebar::-webkit-scrollbar { width: 4px; }
+  .wp-sidebar::-webkit-scrollbar-thumb { background: #3c434a; border-radius: 2px; }
+  .sidebar-section { padding: 20px 0 4px; }
+  .sidebar-label { font-size: 11px; font-weight: 600; color: #787c82; text-transform: uppercase; letter-spacing: 0.8px; padding: 0 16px 8px; }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+    color: var(--wp-nav-text); cursor: pointer; font-size: 13px;
+    font-weight: 500; border-left: 3px solid transparent; transition: all 0.15s;
+    text-decoration: none; user-select: none;
+  }
+  .sidebar-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  .sidebar-item.active { color: var(--wp-nav-active); background: rgba(114,174,230,0.08); border-left-color: var(--wp-nav-active); }
+  .sidebar-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .sidebar-divider { border: none; border-top: 1px solid #3c434a; margin: 8px 0; }
+
+  /* ── Main content ── */
+  .wp-main { margin-left: var(--wp-sidebar-w); margin-top: var(--wp-header-h); padding: 24px 28px; min-height: calc(100vh - var(--wp-header-h)); }
+
+  /* ── Page Header ── */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-title { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .page-title span { color: var(--wp-blue); }
+  .page-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── Tab Nav ── */
+  .tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab-btn {
+    padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; border: 1px solid transparent; border-bottom: none;
+    margin-bottom: -1px; border-radius: var(--radius) var(--radius) 0 0;
+    background: transparent; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn:hover { color: var(--text); background: rgba(0,0,0,0.03); }
+  .tab-btn.active { color: var(--text); background: var(--surface); border-color: var(--border); border-bottom-color: var(--surface); font-weight: 600; }
+  .tab-btn svg { width: 15px; height: 15px; }
+
+  /* ── Cards ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .card-icon { width: 20px; height: 20px; color: var(--wp-blue); }
+  .card-body { padding: 20px; }
+
+  /* ── OS Dropdown ── */
+  .os-select-wrap { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; background: var(--wp-blue-light); border: 1px solid #b3c9e3; border-radius: var(--radius); padding: 14px 18px; }
+  .os-select-label { font-size: 13px; font-weight: 600; color: var(--wp-blue-dark); white-space: nowrap; }
+  .os-select-inner { position: relative; flex: 1; max-width: 280px; }
+  .os-select {
+    appearance: none; width: 100%; padding: 9px 36px 9px 14px; font-size: 13px; font-weight: 600;
+    font-family: 'Inter', sans-serif; color: var(--text); background: var(--surface);
+    border: 2px solid var(--wp-blue); border-radius: var(--radius);
+    cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .os-select:focus { outline: none; box-shadow: 0 0 0 3px rgba(34,113,177,0.2); }
+  .os-select:hover { border-color: var(--wp-blue-dark); }
+  .os-chevron { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--wp-blue); }
+
+  /* ── OS Panels ── */
+  .os-panel { display: none; }
+  .os-panel.active { display: block; }
+
+  /* ── Step list ── */
+  .step-list { display: flex; flex-direction: column; gap: 18px; }
+  .step { display: flex; gap: 16px; align-items: flex-start; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--wp-blue); color: white;
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-content h4 { font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .step-content p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── Code blocks ── */
+  .code-block {
+    background: var(--code-bg); border-radius: var(--radius);
+    padding: 12px 16px; margin: 10px 0; position: relative; overflow-x: auto;
+  }
+  .code-block code { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--code-text); line-height: 1.7; display: block; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .code-block .fn { color: #d2a8ff; }
+  .code-block .num { color: #79c0ff; }
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+    color: #a7aaad; font-size: 11px; font-family: 'Inter', sans-serif; padding: 3px 10px;
+    border-radius: 3px; cursor: pointer; transition: all 0.2s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+  .copy-btn.copied { color: #72e89a; border-color: #72e89a; }
+
+  /* ── Notice boxes ── */
+  .notice { border-left: 4px solid; padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; margin: 14px 0; font-size: 13px; }
+  .notice-info { background: #f0f6fc; border-color: var(--wp-blue); color: #1a4a70; }
+  .notice-success { background: #f0faf0; border-color: var(--success); color: #1a5c28; }
+  .notice-warning { background: #fef9e7; border-color: var(--warning); color: #7a4f0c; }
+  .notice strong { font-weight: 600; }
+
+  /* ── Command Reference Table ── */
+  .cmd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cmd-table th { background: #f6f7f7; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border); }
+  .cmd-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f1; vertical-align: top; }
+  .cmd-table tr:hover td { background: #f9f9f9; }
+  .cmd-table tr:last-child td { border-bottom: none; }
+  .cmd-table .cmd-code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--wp-blue); background: var(--wp-blue-light); padding: 2px 7px; border-radius: 3px; }
+  .cmd-table .desc { color: var(--text-muted); }
+
+  /* ── Section heading ── */
+  .section-heading { font-size: 15px; font-weight: 700; color: var(--text); margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .section-heading::before { content: ''; display: inline-block; width: 4px; height: 16px; background: var(--wp-blue); border-radius: 2px; }
+
+  /* ── Quiz styles ── */
+  #quiz-tab { display: none; }
+  .quiz-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .quiz-progress-wrap { flex: 1; max-width: 300px; }
+  .quiz-progress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+  .quiz-progress-bar { height: 8px; background: #e7e7e7; border-radius: 4px; overflow: hidden; }
+  .quiz-progress-fill { height: 100%; background: var(--wp-blue); border-radius: 4px; transition: width 0.4s ease; }
+  .quiz-score-badge { background: var(--wp-blue-light); color: var(--wp-blue-dark); font-weight: 700; font-size: 16px; padding: 8px 16px; border-radius: var(--radius); border: 1px solid #b3c9e3; }
+
+  .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; transition: border-color 0.2s; }
+  .question-card.correct { border-color: var(--success); }
+  .question-card.incorrect { border-color: var(--error); }
+  .question-header { padding: 14px 18px; display: flex; gap: 12px; align-items: flex-start; border-bottom: 1px solid var(--border); background: #fafafa; }
+  .q-num { width: 24px; height: 24px; border-radius: 50%; background: var(--wp-blue); color: white; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .q-text { font-size: 13.5px; font-weight: 600; color: var(--text); line-height: 1.5; }
+  .options-list { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .option-btn {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer;
+    font-size: 13px; color: var(--text); background: white; text-align: left; transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .option-btn:hover:not(:disabled) { border-color: var(--wp-blue); background: var(--wp-blue-light); color: var(--wp-blue-dark); }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.correct { background: #f0faf0; border-color: var(--success); color: #1a5c28; }
+  .option-btn.incorrect { background: #fdf0f0; border-color: var(--error); color: #7a1c1e; }
+  .option-btn.reveal { background: #f0faf0; border-color: var(--success); color: #1a5c28; opacity: 0.8; }
+  .option-letter { width: 22px; height: 22px; border-radius: 50%; background: var(--bg); border: 1.5px solid var(--border); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-muted); transition: all 0.15s; }
+  .option-btn.correct .option-letter { background: var(--success); border-color: var(--success); color: white; }
+  .option-btn.incorrect .option-letter { background: var(--error); border-color: var(--error); color: white; }
+  .option-btn.reveal .option-letter { background: var(--success); border-color: var(--success); color: white; }
+
+  .explanation { padding: 10px 18px 14px; background: #f9f9f9; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); line-height: 1.6; display: none; }
+  .explanation.show { display: block; }
+  .explanation strong { color: var(--text); }
+
+  .quiz-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; }
+  .btn-primary {
+    background: var(--wp-blue); color: white; border: none; padding: 10px 20px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--wp-blue-dark); }
+  .btn-secondary {
+    background: white; color: var(--text-muted); border: 1px solid var(--border); padding: 9px 18px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--wp-blue); color: var(--wp-blue); }
+
+  .quiz-results { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; text-align: center; margin-top: 24px; display: none; }
+  .quiz-results.show { display: block; }
+  .results-score { font-size: 52px; font-weight: 700; color: var(--wp-blue); line-height: 1; }
+  .results-label { font-size: 16px; font-weight: 600; margin: 8px 0 4px; }
+  .results-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+  .results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 400px; margin: 0 auto 24px; }
+  .result-stat { background: var(--bg); border-radius: var(--radius); padding: 14px; }
+  .result-stat-num { font-size: 24px; font-weight: 700; }
+  .result-stat-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .stat-correct { color: var(--success); }
+  .stat-incorrect { color: var(--error); }
+  .stat-total { color: var(--wp-blue); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── 2-col grid ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } .wp-sidebar { display: none; } .wp-main { margin-left: 0; } }
+
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 3px; margin-left: 8px; }
+  .tag-win { background: #e8f4fd; color: #0078d4; }
+  .tag-mac { background: #f0f0f0; color: #555; }
+  .tag-linux { background: #fff3cd; color: #856404; }
+
+  .level-btn {
+    display: flex; align-items: center; gap: 7px; padding: 7px 16px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;
+    color: var(--text-muted); transition: all 0.15s;
+  }
+  .level-btn:hover { border-color: var(--wp-blue); color: var(--wp-blue); }
+  .level-btn.active { background: var(--wp-blue); border-color: var(--wp-blue); color: white; }
+  .level-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .level-dot-lg { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .level-banner {
+    display: flex; align-items: center; gap: 14px; padding: 14px 20px;
+    border-radius: var(--radius); margin-bottom: 18px; color: white;
+  }
+  .level-beginner-banner { background: linear-gradient(135deg, #006b1a, #00a32a); }
+  .level-intermediate-banner { background: linear-gradient(135deg, #9a6b00, #dba617); }
+  .level-advanced-banner { background: linear-gradient(135deg, #8c1c1c, #d63638); }
+  .level-anchor { margin-top: -70px; padding-top: 70px; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<!-- Admin Bar -->
+<div class="wp-admin-bar">
+  <div class="wp-logo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h18v4H3V3zm0 7h18v4H3v-4zm0 7h18v4H3v-4z"/></svg>
+    <span>SQLite3 <span>Guide</span></span>
+  </div>
+  <div class="wp-bar-right">
+    <div class="wp-bar-badge">v3.x</div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="wp-sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-label">Navigation</div>
+    <div class="sidebar-item active" onclick="switchTab('install', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Installation
+    </div>
+    <div class="sidebar-item" onclick="switchTab('basics', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Basics & Commands
+    </div>
+    <div class="sidebar-item" onclick="switchTab('quiz', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Knowledge Quiz
+    </div>
+  </div>
+  <hr class="sidebar-divider">
+  <div class="sidebar-section">
+    <div class="sidebar-label">Resources</div>
+    <a class="sidebar-item" href="https://sqlite.org/docs.html" target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Official Docs
+    </a>
+    <a class="sidebar-item" href="https://sqlite.org/download.html" target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Downloads
+    </a>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="wp-main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">SQLite3 <span>Complete Guide</span></div>
+      <div class="page-subtitle">Installation, core commands, and a quiz to test your knowledge</div>
+    </div>
+  </div>
+
+  <!-- Tab Nav -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('install', null, this)" id="tab-btn-install">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Installation
+    </button>
+    <button class="tab-btn" onclick="switchTab('basics', null, this)" id="tab-btn-basics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Basics &amp; Commands
+    </button>
+    <button class="tab-btn" onclick="switchTab('quiz', null, this)" id="tab-btn-quiz">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Knowledge Quiz
+    </button>
+  </div>
+
+  <!-- ══════════════════ INSTALL TAB ══════════════════ -->
+  <div class="tab-content active" id="tab-install">
+
+    <div class="card">
+      <div class="card-header">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div class="card-title">What is SQLite3?</div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;">SQLite is a self-contained, serverless, zero-configuration, transactional SQL database engine. Unlike MySQL or PostgreSQL, it stores the entire database in a single <code style="font-family:'JetBrains Mono',monospace;background:var(--bg);padding:1px 5px;border-radius:3px;">.db</code> file on disk — no daemon, no setup, just a file you can open and query.</p>
+        <div class="notice notice-info" style="margin-top:14px;"><strong>Why SQLite?</strong> It's built into Python, PHP, Node.js, Android, iOS, and countless other platforms. It's the most widely deployed database in the world.</div>
+      </div>
+    </div>
+
+    <!-- OS Selector -->
+    <div class="os-select-wrap">
+      <div class="os-select-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:5px;"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Select your OS:
+      </div>
+      <div class="os-select-inner">
+        <select class="os-select" id="osSelect" onchange="switchOS(this.value)">
+          <option value="windows">🪟 Windows</option>
+          <option value="mac">🍎 macOS</option>
+          <option value="linux">🐧 Linux</option>
+        </select>
+        <svg class="os-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+
+    <!-- Windows Panel -->
+    <div class="os-panel active" id="panel-windows">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Installing SQLite3 on Windows</span>
+          <span class="tag tag-win">Windows</span>
+        </div>
+        <div class="card-body">
+          <div class="step-list">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>Download the precompiled binaries</h4>
+                <p>Visit <a href="https://sqlite.org/download.html" target="_blank" style="color:var(--wp-blue);">sqlite.org/download.html</a> and download the <strong>Precompiled Binaries for Windows</strong> bundle — grab <code style="font-family:'JetBrains Mono',monospace;">sqlite-tools-win-x64-*.zip</code>.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>Extract the ZIP file</h4>
+                <p>Right-click the ZIP and select <em>Extract All</em>. You'll find three executables: <code style="font-family:'JetBrains Mono',monospace;">sqlite3.exe</code>, <code style="font-family:'JetBrains Mono',monospace;">sqldiff.exe</code>, and <code style="font-family:'JetBrains Mono',monospace;">sqlite3_analyzer.exe</code>.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>Add to your PATH</h4>
+                <p>Move the folder (e.g. <code style="font-family:'JetBrains Mono',monospace;">C:\sqlite</code>) and add it to your System PATH so you can call <code style="font-family:'JetBrains Mono',monospace;">sqlite3</code> from any terminal. Search for <em>Environment Variables</em> → Edit System Environment Variables → Path → New.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>Verify the installation</h4>
+                <p>Open a new Command Prompt or PowerShell and run:</p>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>sqlite3 --version</code></div>
+                <p>You should see something like <code style="font-family:'JetBrains Mono',monospace;color:var(--wp-blue);">3.46.0 2024-05-23...</code></p>
+              </div>
+            </div>
+          </div>
+          <div class="notice notice-warning" style="margin-top:20px;"><strong>Alternative:</strong> If you use <strong>Chocolatey</strong>, run <code style="font-family:'JetBrains Mono',monospace;">choco install sqlite</code> in an elevated terminal for a one-step install.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- macOS Panel -->
+    <div class="os-panel" id="panel-mac">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Installing SQLite3 on macOS</span>
+          <span class="tag tag-mac">macOS</span>
+        </div>
+        <div class="card-body">
+          <div class="notice notice-success" style="margin-bottom:18px;"><strong>Good news:</strong> SQLite3 comes pre-installed on macOS! You may not need to do anything at all.</div>
+          <div class="step-list">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>Check if it's already installed</h4>
+                <p>Open Terminal and run:</p>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>sqlite3 --version</code></div>
+                <p>If you see a version number, you're done! If not, continue below.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>Install via Homebrew (recommended)</h4>
+                <p>If you have <a href="https://brew.sh" target="_blank" style="color:var(--wp-blue);">Homebrew</a> installed (the standard macOS package manager), run:</p>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>brew install sqlite3</code></div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>Update your shell PATH (if needed)</h4>
+                <p>Homebrew installs to a custom prefix. To use the Homebrew version instead of the system one, add it to your path in <code style="font-family:'JetBrains Mono',monospace;">~/.zshrc</code> or <code style="font-family:'JetBrains Mono',monospace;">~/.bash_profile</code>:</p>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm"># For Apple Silicon (M1/M2/M3):</span>
+export PATH="/opt/homebrew/opt/sqlite/bin:$PATH"
+
+<span class="cm"># For Intel Mac:</span>
+export PATH="/usr/local/opt/sqlite/bin:$PATH"</code></div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>Verify</h4>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>sqlite3 --version</code></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linux Panel -->
+    <div class="os-panel" id="panel-linux">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Installing SQLite3 on Linux</span>
+          <span class="tag tag-linux">Linux</span>
+        </div>
+        <div class="card-body">
+          <div class="step-list">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>Debian / Ubuntu / Mint</h4>
+                <p>SQLite3 is available in the default apt repositories:</p>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>sudo apt update
+sudo apt install sqlite3 libsqlite3-dev</code></div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>Fedora / RHEL / CentOS</h4>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>sudo dnf install sqlite sqlite-devel</code></div>
+                <p style="margin-top:8px;">On older CentOS/RHEL with yum:</p>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>sudo yum install sqlite sqlite-devel</code></div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>Arch Linux</h4>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>sudo pacman -S sqlite</code></div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>Verify</h4>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>sqlite3 --version</code></div>
+                <p>You should see the installed version number printed to stdout.</p>
+              </div>
+            </div>
+          </div>
+          <div class="notice notice-info" style="margin-top:18px;"><strong>Building from source?</strong> Download the amalgamation source from sqlite.org, then run <code style="font-family:'JetBrains Mono',monospace;">./configure &amp;&amp; make &amp;&amp; sudo make install</code>.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-install -->
+
+  <!-- ══════════════════ BASICS TAB ══════════════════ -->
+  <div class="tab-content" id="tab-basics">
+
+    <!-- Level sub-nav -->
+    <div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;">
+      <button class="level-btn active" onclick="scrollToLevel('beginner',this)">
+        <span class="level-dot" style="background:#00a32a;"></span> Beginner
+      </button>
+      <button class="level-btn" onclick="scrollToLevel('intermediate',this)">
+        <span class="level-dot" style="background:#dba617;"></span> Intermediate
+      </button>
+      <button class="level-btn" onclick="scrollToLevel('advanced',this)">
+        <span class="level-dot" style="background:#d63638;"></span> Advanced
+      </button>
+    </div>
+
+    <!-- ── BEGINNER ── -->
+    <div class="level-anchor" id="level-beginner"></div>
+    <div class="level-banner level-beginner-banner">
+      <span class="level-dot-lg" style="background:#00a32a;"></span>
+      <div>
+        <div style="font-weight:700;font-size:15px;">Beginner</div>
+        <div style="font-size:12px;opacity:0.85;margin-top:1px;">Your first steps — open a database, create a table, and run basic queries</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Step 1 — Opening the SQLite Shell</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Open a terminal and type <code style="font-family:'JetBrains Mono',monospace;">sqlite3</code> followed by a filename. If the file doesn't exist, SQLite creates it automatically. You'll land at the <code style="font-family:'JetBrains Mono',monospace;">sqlite&gt;</code> prompt.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm"># Create (or open) a database file</span>
+sqlite3 mydb.db
+
+<span class="cm"># Open an in-memory database — gone when you exit</span>
+sqlite3
+
+<span class="cm"># Check the version without entering the shell</span>
+sqlite3 --version</code></div>
+        <div class="notice notice-info" style="margin-top:12px;"><strong>Tip:</strong> Every SQLite database is just a file. You can copy, move, or email it like any other file.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Step 2 — Essential Dot-Commands</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Dot-commands start with a <code style="font-family:'JetBrains Mono',monospace;">.</code> and are shell meta-commands — they are NOT SQL. They control how the shell behaves and displays output.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>.help              <span class="cm">-- list all dot-commands</span>
+.tables            <span class="cm">-- list tables in the database</span>
+.schema            <span class="cm">-- show CREATE statements for all tables</span>
+.schema users      <span class="cm">-- show schema for one specific table</span>
+.headers on        <span class="cm">-- show column names above results</span>
+.mode table        <span class="cm">-- format results as an ASCII table (most readable)</span>
+.mode column       <span class="cm">-- fixed-width column format</span>
+.mode csv          <span class="cm">-- comma-separated output</span>
+.databases         <span class="cm">-- show attached databases</span>
+.quit              <span class="cm">-- exit the shell (also Ctrl+D)</span></code></div>
+        <div class="notice notice-success" style="margin-top:12px;"><strong>First thing to do</strong> every time you open the shell: run <code style="font-family:'JetBrains Mono',monospace;">.headers on</code> and <code style="font-family:'JetBrains Mono',monospace;">.mode table</code> — it makes every query output much easier to read.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Step 3 — Create Your First Table</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A table is where your data lives. Each column has a name and a data type. SQLite has five storage types: <code style="font-family:'JetBrains Mono',monospace;">INTEGER</code>, <code style="font-family:'JetBrains Mono',monospace;">TEXT</code>, <code style="font-family:'JetBrains Mono',monospace;">REAL</code>, <code style="font-family:'JetBrains Mono',monospace;">BLOB</code>, and <code style="font-family:'JetBrains Mono',monospace;">NULL</code>.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- The simplest possible table</span>
+<span class="kw">CREATE TABLE</span> users (
+  id    <span class="fn">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
+  name  <span class="fn">TEXT</span>,
+  age   <span class="fn">INTEGER</span>
+);
+
+<span class="cm">-- Safer version — won't error if table already exists</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> users (
+  id    <span class="fn">INTEGER</span> <span class="kw">PRIMARY KEY</span> AUTOINCREMENT,
+  name  <span class="fn">TEXT</span>    <span class="kw">NOT NULL</span>,
+  email <span class="fn">TEXT</span>    <span class="kw">UNIQUE</span>,
+  age   <span class="fn">INTEGER</span>,
+  created_at <span class="fn">TEXT</span> <span class="kw">DEFAULT</span> <span class="fn">CURRENT_TIMESTAMP</span>
+);</code></div>
+        <p style="font-size:12.5px;color:var(--text-muted);margin-top:10px;"><strong>PRIMARY KEY</strong> uniquely identifies each row. <strong>AUTOINCREMENT</strong> makes SQLite assign the next number automatically. <strong>NOT NULL</strong> requires a value. <strong>UNIQUE</strong> prevents duplicates.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Step 4 — Insert Data</div></div>
+      <div class="card-body">
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Insert one row (specify columns explicitly)</span>
+<span class="kw">INSERT INTO</span> users (name, email, age)
+<span class="kw">VALUES</span> (<span class="str">'Gordon'</span>, <span class="str">'gordon@example.com'</span>, <span class="num">30</span>);
+
+<span class="cm">-- Insert multiple rows at once</span>
+<span class="kw">INSERT INTO</span> users (name, age)
+<span class="kw">VALUES</span>
+  (<span class="str">'Alice'</span>, <span class="num">25</span>),
+  (<span class="str">'Bob'</span>, <span class="num">34</span>),
+  (<span class="str">'Carol'</span>, <span class="num">29</span>);
+
+<span class="cm">-- Insert a row without specifying columns</span>
+<span class="cm">-- (must supply ALL columns in exact order)</span>
+<span class="kw">INSERT INTO</span> users <span class="kw">VALUES</span> (<span class="kw">NULL</span>, <span class="str">'Dave'</span>, <span class="str">'dave@x.com'</span>, <span class="num">40</span>, <span class="fn">CURRENT_TIMESTAMP</span>);</code></div>
+        <div class="notice notice-warning" style="margin-top:12px;"><strong>Best practice:</strong> Always name your columns explicitly. It makes your SQL resilient to future table changes.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Step 5 — Read Data with SELECT</div></div>
+      <div class="card-body">
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Get everything</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users;
+
+<span class="cm">-- Get specific columns only</span>
+<span class="kw">SELECT</span> name, age <span class="kw">FROM</span> users;
+
+<span class="cm">-- Filter rows with WHERE</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> age > <span class="num">25</span>;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> name = <span class="str">'Alice'</span>;
+
+<span class="cm">-- Sort the results</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">ORDER BY</span> age <span class="kw">ASC</span>;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">ORDER BY</span> name <span class="kw">DESC</span>;
+
+<span class="cm">-- Limit how many rows come back</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">LIMIT</span> <span class="num">5</span>;
+
+<span class="cm">-- Count rows</span>
+<span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> users;
+<span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> users <span class="kw">WHERE</span> age > <span class="num">25</span>;</code></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Step 6 — Update &amp; Delete Rows</div></div>
+      <div class="card-body">
+        <div class="two-col" style="margin:0;">
+          <div>
+            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">UPDATE — change existing data</p>
+            <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Change one row by id</span>
+<span class="kw">UPDATE</span> users
+<span class="kw">SET</span> age = <span class="num">31</span>
+<span class="kw">WHERE</span> id = <span class="num">1</span>;
+
+<span class="cm">-- Change multiple columns</span>
+<span class="kw">UPDATE</span> users
+<span class="kw">SET</span> age = <span class="num">31</span>,
+    email = <span class="str">'new@x.com'</span>
+<span class="kw">WHERE</span> id = <span class="num">1</span>;</code></div>
+          </div>
+          <div>
+            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">DELETE — remove rows</p>
+            <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Delete one specific row</span>
+<span class="kw">DELETE FROM</span> users
+<span class="kw">WHERE</span> id = <span class="num">2</span>;
+
+<span class="cm">-- Delete all rows (keeps table)</span>
+<span class="kw">DELETE FROM</span> users;
+
+<span class="cm">-- Remove the table entirely</span>
+<span class="kw">DROP TABLE IF EXISTS</span> users;</code></div>
+          </div>
+        </div>
+        <div class="notice notice-warning" style="margin-top:14px;"><strong>Rule #1:</strong> Always write your WHERE clause <em>first</em> and verify it with a SELECT before running UPDATE or DELETE. A missing WHERE updates or deletes every row.</div>
+      </div>
+    </div>
+
+    <!-- ── INTERMEDIATE ── -->
+    <div class="level-anchor" id="level-intermediate"></div>
+    <div class="level-banner level-intermediate-banner">
+      <span class="level-dot-lg" style="background:#dba617;"></span>
+      <div>
+        <div style="font-weight:700;font-size:15px;">Intermediate</div>
+        <div style="font-size:12px;opacity:0.85;margin-top:1px;">Filtering, aggregation, joins, constraints, and modifying existing tables</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Advanced WHERE Filtering</div></div>
+      <div class="card-body">
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- AND / OR logic</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> age > <span class="num">25</span> <span class="kw">AND</span> age < <span class="num">40</span>;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> name = <span class="str">'Alice'</span> <span class="kw">OR</span> name = <span class="str">'Bob'</span>;
+
+<span class="cm">-- BETWEEN (inclusive on both ends)</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> age <span class="kw">BETWEEN</span> <span class="num">25</span> <span class="kw">AND</span> <span class="num">40</span>;
+
+<span class="cm">-- IN — match any value in a list</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> name <span class="kw">IN</span> (<span class="str">'Alice'</span>, <span class="str">'Bob'</span>, <span class="str">'Carol'</span>);
+
+<span class="cm">-- NOT IN — exclude a list</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> name <span class="kw">NOT IN</span> (<span class="str">'Alice'</span>, <span class="str">'Bob'</span>);
+
+<span class="cm">-- LIKE — pattern matching (% = any chars, _ = one char)</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> name <span class="kw">LIKE</span> <span class="str">'G%'</span>;      <span class="cm">-- starts with G</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> email <span class="kw">LIKE</span> <span class="str">'%@gmail.com'</span>;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> name <span class="kw">LIKE</span> <span class="str">'_ob'</span>;     <span class="cm">-- Bob, Rob, etc.</span>
+
+<span class="cm">-- IS NULL / IS NOT NULL</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> email <span class="kw">IS NULL</span>;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> email <span class="kw">IS NOT NULL</span>;</code></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Aggregate Functions &amp; GROUP BY</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Aggregate functions summarize multiple rows into a single result. Combine them with GROUP BY to compute per-group statistics.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Built-in aggregate functions</span>
+<span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> users;             <span class="cm">-- total rows</span>
+<span class="kw">SELECT</span> <span class="fn">COUNT</span>(email) <span class="kw">FROM</span> users;         <span class="cm">-- rows where email is not NULL</span>
+<span class="kw">SELECT</span> <span class="fn">SUM</span>(age) <span class="kw">FROM</span> users;             <span class="cm">-- sum of all ages</span>
+<span class="kw">SELECT</span> <span class="fn">AVG</span>(age) <span class="kw">FROM</span> users;             <span class="cm">-- average age</span>
+<span class="kw">SELECT</span> <span class="fn">MIN</span>(age), <span class="fn">MAX</span>(age) <span class="kw">FROM</span> users;  <span class="cm">-- min and max</span>
+
+<span class="cm">-- GROUP BY — aggregate per category</span>
+<span class="cm">-- Suppose we have an orders table with a status column</span>
+<span class="kw">SELECT</span> status, <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total
+<span class="kw">FROM</span> orders
+<span class="kw">GROUP BY</span> status;
+
+<span class="cm">-- HAVING — filter groups (like WHERE but for aggregates)</span>
+<span class="kw">SELECT</span> status, <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total
+<span class="kw">FROM</span> orders
+<span class="kw">GROUP BY</span> status
+<span class="kw">HAVING</span> total > <span class="num">5</span>;
+
+<span class="cm">-- Column aliases with AS</span>
+<span class="kw">SELECT</span> name, age <span class="kw">AS</span> years_old <span class="kw">FROM</span> users;
+<span class="kw">SELECT</span> <span class="fn">ROUND</span>(<span class="fn">AVG</span>(age), <span class="num">1</span>) <span class="kw">AS</span> avg_age <span class="kw">FROM</span> users;</code></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Joining Tables</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">JOINs combine rows from two or more tables based on a related column. Set up two tables first:</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Setup: two related tables</span>
+<span class="kw">CREATE TABLE</span> departments (
+  id   <span class="fn">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
+  name <span class="fn">TEXT</span>
+);
+<span class="kw">CREATE TABLE</span> employees (
+  id    <span class="fn">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
+  name  <span class="fn">TEXT</span>,
+  dept_id <span class="fn">INTEGER</span> <span class="kw">REFERENCES</span> departments(id)
+);
+
+<span class="cm">-- INNER JOIN — only rows that match in BOTH tables</span>
+<span class="kw">SELECT</span> e.name, d.name <span class="kw">AS</span> department
+<span class="kw">FROM</span> employees e
+<span class="kw">INNER JOIN</span> departments d <span class="kw">ON</span> e.dept_id = d.id;
+
+<span class="cm">-- LEFT JOIN — all employees, even those with no department</span>
+<span class="kw">SELECT</span> e.name, d.name <span class="kw">AS</span> department
+<span class="kw">FROM</span> employees e
+<span class="kw">LEFT JOIN</span> departments d <span class="kw">ON</span> e.dept_id = d.id;
+
+<span class="cm">-- Self-join — compare rows within the same table</span>
+<span class="kw">SELECT</span> a.name, b.name <span class="kw">AS</span> colleague
+<span class="kw">FROM</span> employees a
+<span class="kw">JOIN</span> employees b <span class="kw">ON</span> a.dept_id = b.dept_id
+<span class="kw">WHERE</span> a.id != b.id;</code></div>
+        <div class="notice notice-info" style="margin-top:12px;"><strong>INNER JOIN</strong> = only matched rows. <strong>LEFT JOIN</strong> = all left-table rows + matched right-table rows (NULLs where no match). SQLite does not support RIGHT JOIN or FULL OUTER JOIN directly.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Altering Tables</div></div>
+      <div class="card-body">
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Add a new column</span>
+<span class="kw">ALTER TABLE</span> users <span class="kw">ADD COLUMN</span> phone <span class="fn">TEXT</span>;
+
+<span class="cm">-- Rename the table</span>
+<span class="kw">ALTER TABLE</span> users <span class="kw">RENAME TO</span> customers;
+
+<span class="cm">-- Rename a column (SQLite 3.25.0+)</span>
+<span class="kw">ALTER TABLE</span> users <span class="kw">RENAME COLUMN</span> age <span class="kw">TO</span> birth_year;
+
+<span class="cm">-- SQLite can't DROP columns directly.</span>
+<span class="cm">-- Workaround: recreate the table without the column</span>
+<span class="kw">CREATE TABLE</span> users_new <span class="kw">AS</span>
+  <span class="kw">SELECT</span> id, name, email <span class="kw">FROM</span> users;  <span class="cm">-- omit 'age'</span>
+<span class="kw">DROP TABLE</span> users;
+<span class="kw">ALTER TABLE</span> users_new <span class="kw">RENAME TO</span> users;</code></div>
+        <div class="notice notice-warning" style="margin-top:12px;"><strong>SQLite limitation:</strong> ALTER TABLE is much more restricted than MySQL or PostgreSQL. You cannot drop columns, change column types, or add constraints to existing columns directly.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Useful Built-in Functions</div></div>
+      <div class="card-body">
+        <div class="two-col" style="margin:0;">
+          <div>
+            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">Text functions</p>
+            <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- String operations</span>
+<span class="fn">LENGTH</span>(<span class="str">'hello'</span>)         <span class="cm">-- 5</span>
+<span class="fn">UPPER</span>(<span class="str">'hello'</span>)         <span class="cm">-- HELLO</span>
+<span class="fn">LOWER</span>(<span class="str">'HELLO'</span>)         <span class="cm">-- hello</span>
+<span class="fn">TRIM</span>(<span class="str">'  hi  '</span>)         <span class="cm">-- hi</span>
+<span class="fn">SUBSTR</span>(<span class="str">'hello'</span>,<span class="num">2</span>,<span class="num">3</span>)    <span class="cm">-- ell</span>
+<span class="fn">REPLACE</span>(name,<span class="str">'o'</span>,<span class="str">'0'</span>) <span class="cm">-- swap chars</span>
+<span class="fn">INSTR</span>(name, <span class="str">'or'</span>)     <span class="cm">-- find position</span>
+
+<span class="cm">-- Combine columns</span>
+<span class="kw">SELECT</span> first || <span class="str">' '</span> || last
+  <span class="kw">AS</span> full_name <span class="kw">FROM</span> people;</code></div>
+          </div>
+          <div>
+            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">Numeric &amp; date functions</p>
+            <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Math</span>
+<span class="fn">ABS</span>(-<span class="num">5</span>)             <span class="cm">-- 5</span>
+<span class="fn">ROUND</span>(<span class="num">3.14159</span>, <span class="num">2</span>)  <span class="cm">-- 3.14</span>
+<span class="fn">MAX</span>(<span class="num">3</span>, <span class="num">7</span>, <span class="num">2</span>)       <span class="cm">-- 7</span>
+<span class="fn">MIN</span>(<span class="num">3</span>, <span class="num">7</span>, <span class="num">2</span>)       <span class="cm">-- 2</span>
+<span class="fn">RANDOM</span>()           <span class="cm">-- random integer</span>
+
+<span class="cm">-- Dates</span>
+<span class="fn">DATE</span>(<span class="str">'now'</span>)         <span class="cm">-- 2025-05-02</span>
+<span class="fn">DATETIME</span>(<span class="str">'now'</span>)    <span class="cm">-- 2025-05-02 14:30:00</span>
+<span class="fn">STRFTIME</span>(<span class="str">'%Y'</span>, <span class="str">'now'</span>) <span class="cm">-- 2025</span>
+
+<span class="cm">-- Null handling</span>
+<span class="fn">COALESCE</span>(<span class="kw">NULL</span>, <span class="str">'default'</span>) <span class="cm">-- default</span>
+<span class="fn">IFNULL</span>(col, <span class="num">0</span>)     <span class="cm">-- 0 if null</span></code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADVANCED ── -->
+    <div class="level-anchor" id="level-advanced"></div>
+    <div class="level-banner level-advanced-banner">
+      <span class="level-dot-lg" style="background:#d63638;"></span>
+      <div>
+        <div style="font-weight:700;font-size:15px;">Advanced</div>
+        <div style="font-size:12px;opacity:0.85;margin-top:1px;">Indexes, views, subqueries, transactions, CTEs, triggers, and performance</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Indexes — Speed Up Queries</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">An index lets SQLite find rows without scanning every row. Create them on columns you frequently filter or sort on.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Create a basic index</span>
+<span class="kw">CREATE INDEX</span> idx_users_name <span class="kw">ON</span> users (name);
+
+<span class="cm">-- Unique index (also enforces constraint)</span>
+<span class="kw">CREATE UNIQUE INDEX</span> idx_users_email <span class="kw">ON</span> users (email);
+
+<span class="cm">-- Composite index (covers multi-column queries)</span>
+<span class="kw">CREATE INDEX</span> idx_orders_user_date
+  <span class="kw">ON</span> orders (user_id, created_at);
+
+<span class="cm">-- View all indexes on a table</span>
+<span class="kw">PRAGMA</span> index_list(users);
+
+<span class="cm">-- Drop an index</span>
+<span class="kw">DROP INDEX IF EXISTS</span> idx_users_name;
+
+<span class="cm">-- EXPLAIN QUERY PLAN — see if your index is being used</span>
+<span class="kw">EXPLAIN QUERY PLAN</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> email = <span class="str">'g@x.com'</span>;</code></div>
+        <div class="notice notice-warning" style="margin-top:12px;"><strong>Trade-off:</strong> Indexes speed up reads but slow down writes (INSERT/UPDATE/DELETE) because the index must be updated too. Only index columns you actually query on.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Views — Saved Queries</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A view is a named query stored in the database. It looks and acts like a table but doesn't store data itself — it re-runs the query each time you access it.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Create a view</span>
+<span class="kw">CREATE VIEW</span> active_users <span class="kw">AS</span>
+  <span class="kw">SELECT</span> id, name, email
+  <span class="kw">FROM</span> users
+  <span class="kw">WHERE</span> status = <span class="str">'active'</span>;
+
+<span class="cm">-- Use a view like a table</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> active_users;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> active_users <span class="kw">WHERE</span> name <span class="kw">LIKE</span> <span class="str">'A%'</span>;
+
+<span class="cm">-- List all views</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> sqlite_master <span class="kw">WHERE</span> type = <span class="str">'view'</span>;
+
+<span class="cm">-- Drop a view</span>
+<span class="kw">DROP VIEW IF EXISTS</span> active_users;</code></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Subqueries</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A subquery is a SELECT nested inside another SQL statement. It can appear in WHERE, FROM, or SELECT clauses.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- WHERE subquery — find users older than average</span>
+<span class="kw">SELECT</span> name, age <span class="kw">FROM</span> users
+<span class="kw">WHERE</span> age > (<span class="kw">SELECT</span> <span class="fn">AVG</span>(age) <span class="kw">FROM</span> users);
+
+<span class="cm">-- EXISTS subquery — find users who have placed orders</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> users u
+<span class="kw">WHERE EXISTS</span> (
+  <span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> orders o
+  <span class="kw">WHERE</span> o.user_id = u.id
+);
+
+<span class="cm">-- IN subquery</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> users
+<span class="kw">WHERE</span> id <span class="kw">IN</span> (
+  <span class="kw">SELECT</span> user_id <span class="kw">FROM</span> orders
+  <span class="kw">WHERE</span> total > <span class="num">100</span>
+);
+
+<span class="cm">-- FROM subquery (derived table)</span>
+<span class="kw">SELECT</span> dept, avg_age <span class="kw">FROM</span> (
+  <span class="kw">SELECT</span> dept_id <span class="kw">AS</span> dept, <span class="fn">AVG</span>(age) <span class="kw">AS</span> avg_age
+  <span class="kw">FROM</span> employees
+  <span class="kw">GROUP BY</span> dept_id
+) <span class="kw">WHERE</span> avg_age > <span class="num">30</span>;</code></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Transactions</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A transaction groups multiple statements into a single all-or-nothing operation. If anything fails, you roll back and nothing is saved.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Wrap multiple operations in a transaction</span>
+<span class="kw">BEGIN TRANSACTION</span>;
+
+<span class="kw">INSERT INTO</span> orders (user_id, total)
+  <span class="kw">VALUES</span> (<span class="num">1</span>, <span class="num">99.99</span>);
+
+<span class="kw">UPDATE</span> inventory
+  <span class="kw">SET</span> stock = stock - <span class="num">1</span>
+  <span class="kw">WHERE</span> product_id = <span class="num">42</span>;
+
+<span class="cm">-- If everything is OK, save it</span>
+<span class="kw">COMMIT</span>;
+
+<span class="cm">-- Or undo everything if something went wrong</span>
+<span class="kw">ROLLBACK</span>;
+
+<span class="cm">-- SAVEPOINT — partial rollback points</span>
+<span class="kw">SAVEPOINT</span> before_update;
+<span class="kw">UPDATE</span> users <span class="kw">SET</span> age = <span class="num">99</span> <span class="kw">WHERE</span> id = <span class="num">1</span>;
+<span class="kw">ROLLBACK TO</span> before_update;  <span class="cm">-- undoes only since savepoint</span>
+<span class="kw">RELEASE</span> before_update;</code></div>
+        <div class="notice notice-info" style="margin-top:12px;"><strong>Why use transactions?</strong> Performance — wrapping 1000 INSERTs in one transaction can be 10–100x faster than auto-committing each one. Data integrity — either all changes happen, or none do.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">CTEs — Common Table Expressions</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A CTE (WITH clause) creates a temporary named result set you can reference in the same query. They make complex queries readable and can be recursive.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Basic CTE — name a subquery for readability</span>
+<span class="kw">WITH</span> high_spenders <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> user_id, <span class="fn">SUM</span>(total) <span class="kw">AS</span> lifetime
+  <span class="kw">FROM</span> orders
+  <span class="kw">GROUP BY</span> user_id
+  <span class="kw">HAVING</span> lifetime > <span class="num">500</span>
+)
+<span class="kw">SELECT</span> u.name, hs.lifetime
+<span class="kw">FROM</span> users u
+<span class="kw">JOIN</span> high_spenders hs <span class="kw">ON</span> u.id = hs.user_id
+<span class="kw">ORDER BY</span> hs.lifetime <span class="kw">DESC</span>;
+
+<span class="cm">-- Chained CTEs (reference each other)</span>
+<span class="kw">WITH</span>
+  totals <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> user_id, <span class="fn">SUM</span>(total) <span class="kw">AS</span> spend <span class="kw">FROM</span> orders <span class="kw">GROUP BY</span> user_id
+  ),
+  ranked <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> *, <span class="fn">RANK</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> spend <span class="kw">DESC</span>) <span class="kw">AS</span> rnk
+    <span class="kw">FROM</span> totals
+  )
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> ranked <span class="kw">WHERE</span> rnk <= <span class="num">10</span>;
+
+<span class="cm">-- Recursive CTE — walk a tree/hierarchy</span>
+<span class="kw">WITH RECURSIVE</span> org_tree(id, name, depth) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> id, name, <span class="num">0</span> <span class="kw">FROM</span> employees <span class="kw">WHERE</span> manager_id <span class="kw">IS NULL</span>
+  <span class="kw">UNION ALL</span>
+  <span class="kw">SELECT</span> e.id, e.name, t.depth + <span class="num">1</span>
+  <span class="kw">FROM</span> employees e
+  <span class="kw">JOIN</span> org_tree t <span class="kw">ON</span> e.manager_id = t.id
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> org_tree <span class="kw">ORDER BY</span> depth;</code></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Triggers</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A trigger is SQL that runs automatically when a specific event (INSERT, UPDATE, DELETE) happens on a table.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Auto-set updated_at timestamp on row change</span>
+<span class="kw">CREATE TRIGGER</span> set_updated_at
+<span class="kw">AFTER UPDATE ON</span> users
+<span class="kw">FOR EACH ROW BEGIN</span>
+  <span class="kw">UPDATE</span> users
+  <span class="kw">SET</span> updated_at = <span class="fn">DATETIME</span>(<span class="str">'now'</span>)
+  <span class="kw">WHERE</span> id = <span class="kw">NEW</span>.id;
+<span class="kw">END</span>;
+
+<span class="cm">-- Audit log — record who deleted what</span>
+<span class="kw">CREATE TRIGGER</span> log_deletes
+<span class="kw">BEFORE DELETE ON</span> orders
+<span class="kw">FOR EACH ROW BEGIN</span>
+  <span class="kw">INSERT INTO</span> audit_log (action, record_id, happened_at)
+  <span class="kw">VALUES</span> (<span class="str">'DELETE'</span>, <span class="kw">OLD</span>.id, <span class="fn">DATETIME</span>(<span class="str">'now'</span>));
+<span class="kw">END</span>;
+
+<span class="cm">-- List all triggers</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> sqlite_master <span class="kw">WHERE</span> type = <span class="str">'trigger'</span>;
+
+<span class="cm">-- Drop a trigger</span>
+<span class="kw">DROP TRIGGER IF EXISTS</span> set_updated_at;</code></div>
+        <div class="notice notice-info" style="margin-top:12px;">Inside a trigger, <code style="font-family:'JetBrains Mono',monospace;">NEW.column</code> refers to the incoming value and <code style="font-family:'JetBrains Mono',monospace;">OLD.column</code> refers to the previous value (for UPDATE and DELETE).</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">PRAGMA — Database Settings &amp; Info</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">PRAGMAs are special commands that control SQLite's internal settings and expose metadata.</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Enforce foreign key constraints (OFF by default!)</span>
+<span class="kw">PRAGMA</span> foreign_keys = ON;
+
+<span class="cm">-- Check integrity of the database file</span>
+<span class="kw">PRAGMA</span> integrity_check;
+
+<span class="cm">-- See column info for a table</span>
+<span class="kw">PRAGMA</span> table_info(users);
+
+<span class="cm">-- See all indexes on a table</span>
+<span class="kw">PRAGMA</span> index_list(users);
+
+<span class="cm">-- Enable WAL mode (better write performance)</span>
+<span class="kw">PRAGMA</span> journal_mode = WAL;
+
+<span class="cm">-- Tune the cache size (in pages; negative = KB)</span>
+<span class="kw">PRAGMA</span> cache_size = -<span class="num">64000</span>;  <span class="cm">-- 64MB cache</span>
+
+<span class="cm">-- Reclaim unused space after deletes</span>
+<span class="kw">VACUUM</span>;
+
+<span class="cm">-- See SQLite version info</span>
+<span class="kw">SELECT</span> <span class="fn">sqlite_version</span>();</code></div>
+        <div class="notice notice-warning" style="margin-top:12px;"><strong>Important:</strong> <code style="font-family:'JetBrains Mono',monospace;">PRAGMA foreign_keys = ON</code> must be run every time you open a connection — it resets to OFF by default. Foreign key constraints are silently ignored if this is off.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">UPSERT, Window Functions &amp; JSON</div></div>
+      <div class="card-body">
+        <div class="section-heading" style="margin-top:0;">UPSERT (INSERT OR REPLACE)</div>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Insert or update if the key already exists (SQLite 3.24+)</span>
+<span class="kw">INSERT INTO</span> users (id, name, age)
+<span class="kw">VALUES</span> (<span class="num">1</span>, <span class="str">'Gordon'</span>, <span class="num">31</span>)
+<span class="kw">ON CONFLICT</span>(id) <span class="kw">DO UPDATE SET</span>
+  name = <span class="kw">excluded</span>.name,
+  age  = <span class="kw">excluded</span>.age;
+
+<span class="cm">-- Older approach — replace entire row</span>
+<span class="kw">INSERT OR REPLACE INTO</span> users (id, name, age)
+<span class="kw">VALUES</span> (<span class="num">1</span>, <span class="str">'Gordon'</span>, <span class="num">31</span>);</code></div>
+
+        <div class="section-heading">Window Functions (SQLite 3.25+)</div>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- ROW_NUMBER — rank each row within a partition</span>
+<span class="kw">SELECT</span> name, age,
+  <span class="fn">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> age <span class="kw">DESC</span>) <span class="kw">AS</span> rank
+<span class="kw">FROM</span> users;
+
+<span class="cm">-- Running total</span>
+<span class="kw">SELECT</span> name, total,
+  <span class="fn">SUM</span>(total) <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> created_at) <span class="kw">AS</span> running_total
+<span class="kw">FROM</span> orders;
+
+<span class="cm">-- LAG / LEAD — compare to previous/next row</span>
+<span class="kw">SELECT</span> date, revenue,
+  <span class="fn">LAG</span>(revenue) <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> date) <span class="kw">AS</span> prev_revenue
+<span class="kw">FROM</span> daily_sales;</code></div>
+
+        <div class="section-heading">JSON Support (SQLite 3.38+)</div>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code><span class="cm">-- Store JSON in a TEXT column, query with json_extract</span>
+<span class="kw">INSERT INTO</span> products (name, attrs)
+<span class="kw">VALUES</span> (<span class="str">'Widget'</span>, <span class="str">'{"color":"blue","weight":1.5}'</span>);
+
+<span class="cm">-- Extract a field from JSON</span>
+<span class="kw">SELECT</span> name, <span class="fn">json_extract</span>(attrs, <span class="str">'$.color'</span>) <span class="kw">AS</span> color
+<span class="kw">FROM</span> products;
+
+<span class="cm">-- Filter by JSON field value</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> products
+<span class="kw">WHERE</span> <span class="fn">json_extract</span>(attrs, <span class="str">'$.color'</span>) = <span class="str">'blue'</span>;</code></div>
+      </div>
+    </div>
+
+  </div><!-- /tab-basics -->
+
+  <!-- ══════════════════ QUIZ TAB ══════════════════ -->
+  <div class="tab-content" id="tab-quiz">
+
+    <div class="quiz-header">
+      <div>
+        <div style="font-size:15px;font-weight:700;">SQLite3 Knowledge Quiz</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">10 questions — click an option to answer</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="quiz-progress-wrap">
+          <div class="quiz-progress-label" id="progress-label">0 / 10 answered</div>
+          <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="progress-fill" style="width:0%"></div></div>
+        </div>
+        <div class="quiz-score-badge" id="score-badge">Score: 0 / 0</div>
+      </div>
+    </div>
+
+    <div id="questions-container"></div>
+
+    <div class="quiz-actions">
+      <button class="btn-primary" id="submit-btn" onclick="submitQuiz()" style="display:none">Submit Quiz</button>
+      <button class="btn-secondary" id="reset-btn" onclick="resetQuiz()">Reset Quiz</button>
+      <span id="quiz-status" style="font-size:13px;color:var(--text-muted);"></span>
+    </div>
+
+    <div class="quiz-results" id="quiz-results">
+      <div class="results-score" id="results-score">0/10</div>
+      <div class="results-label" id="results-label"></div>
+      <div class="results-sub" id="results-sub"></div>
+      <div class="results-grid">
+        <div class="result-stat"><div class="result-stat-num stat-correct" id="res-correct">0</div><div class="result-stat-lbl">Correct</div></div>
+        <div class="result-stat"><div class="result-stat-num stat-incorrect" id="res-incorrect">0</div><div class="result-stat-lbl">Incorrect</div></div>
+        <div class="result-stat"><div class="result-stat-num stat-total" id="res-pct">0%</div><div class="result-stat-lbl">Score</div></div>
+      </div>
+      <button class="btn-primary" onclick="resetQuiz()">Retake Quiz</button>
+    </div>
+
+  </div><!-- /tab-quiz -->
+
+</div><!-- /wp-main -->
+
+<script>
+const questions = [
+  {
+    q: "SQLite3 stores an entire database in which type of structure?",
+    options: ["A dedicated server process", "A single file on disk", "Multiple files spread across directories", "A network socket connection"],
+    answer: 1,
+    explain: "SQLite stores the entire database — tables, indexes, triggers, and views — in a single ordinary disk file. This is one of its defining features (serverless, single-file)."
+  },
+  {
+    q: "Which dot-command lists all tables in the currently open SQLite database?",
+    options: [".show", ".list", ".tables", ".schema"],
+    answer: 2,
+    explain: ".tables lists all the tables in the current database. .schema (without arguments) shows the CREATE statements for all objects, not just a list of table names."
+  },
+  {
+    q: "What happens if you run `sqlite3 newdb.db` and newdb.db does not already exist?",
+    options: ["SQLite throws an error", "SQLite creates the file automatically", "SQLite opens an in-memory database instead", "SQLite prompts you to confirm creation"],
+    answer: 1,
+    explain: "When you specify a filename that doesn't exist, SQLite creates it automatically the moment you make a change to the database. If you quit without writing any data, the file is not saved."
+  },
+  {
+    q: "Which SQL command would you use to add a new column called `phone TEXT` to an existing `users` table?",
+    options: ["ADD COLUMN users phone TEXT;", "ALTER TABLE users ADD COLUMN phone TEXT;", "UPDATE TABLE users ADD phone TEXT;", "MODIFY TABLE users INSERT COLUMN phone TEXT;"],
+    answer: 1,
+    explain: "The correct syntax is ALTER TABLE tablename ADD COLUMN columnname datatype;. SQLite's ALTER TABLE support is limited — you can add columns and rename the table, but you cannot drop columns directly."
+  },
+  {
+    q: "What does the SQL wildcard `%` represent in a LIKE clause?",
+    options: ["Exactly one character", "Any single digit", "Zero or more characters of any kind", "A literal percent symbol only"],
+    answer: 2,
+    explain: "In a LIKE clause, % matches zero or more characters of any type. For example, 'G%' matches 'Gordon', 'Go', or 'G' alone. The underscore _ matches exactly one character."
+  },
+  {
+    q: "You want to permanently remove the entire `orders` table, including its structure and all data. Which command does this?",
+    options: ["DELETE FROM orders;", "REMOVE TABLE orders;", "TRUNCATE TABLE orders;", "DROP TABLE orders;"],
+    answer: 3,
+    explain: "DROP TABLE removes the table structure and all of its data permanently. DELETE FROM orders; removes all rows but leaves the table structure intact. SQLite does not support TRUNCATE."
+  },
+  {
+    q: "Which of these is NOT a valid SQLite column type affinity?",
+    options: ["TEXT", "BLOB", "BOOLEAN", "REAL"],
+    answer: 2,
+    explain: "SQLite's five storage classes are NULL, INTEGER, REAL, TEXT, and BLOB. There is no native BOOLEAN type — SQLite stores booleans as integers (0 for false, 1 for true). It will accept BOOLEAN as a column type declaration but stores values as integers."
+  },
+  {
+    q: "What is the purpose of the `.headers on` dot-command?",
+    options: ["Enables foreign key constraints", "Shows column names above query results", "Displays the database file headers", "Turns on syntax highlighting"],
+    answer: 1,
+    explain: "By default, SQLite's shell outputs query results without column names. Running .headers on makes the shell print column names as a header row above your query results, which is much easier to read."
+  },
+  {
+    q: "Which keyword prevents duplicate values in a column when defining a table?",
+    options: ["PRIMARY", "DISTINCT", "UNIQUE", "NOT NULL"],
+    answer: 2,
+    explain: "The UNIQUE constraint ensures no two rows can have the same value in that column (or combination of columns). NOT NULL prevents empty values but allows duplicates. PRIMARY KEY is both UNIQUE and NOT NULL, but it's a special constraint for the row identifier."
+  },
+  {
+    q: "If you run `UPDATE users SET age = 99;` with no WHERE clause, what happens?",
+    options: ["SQLite throws an error requiring a WHERE clause", "Only the first row is updated", "Every row in the users table has its age set to 99", "Only rows where age is NULL are updated"],
+    answer: 2,
+    explain: "Without a WHERE clause, an UPDATE statement affects every single row in the table. This is a common and dangerous mistake — always double-check that your UPDATE has a WHERE clause when you only intend to update specific rows."
+  }
+];
+
+let answered = {};
+let score = 0;
+
+function buildQuiz() {
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '';
+  answered = {};
+  score = 0;
+  updateProgress();
+  document.getElementById('submit-btn').style.display = 'none';
+  document.getElementById('quiz-results').classList.remove('show');
+  document.getElementById('quiz-status').textContent = '';
+  document.getElementById('score-badge').textContent = 'Score: 0 / 0';
+
+  questions.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = 'qcard-' + qi;
+
+    const letters = ['A','B','C','D'];
+    const opts = q.options.map((opt, oi) => `
+      <button class="option-btn" id="opt-${qi}-${oi}" onclick="selectAnswer(${qi}, ${oi})">
+        <span class="option-letter">${letters[oi]}</span>
+        ${opt}
+      </button>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="question-header">
+        <div class="q-num">${qi + 1}</div>
+        <div class="q-text">${q.q}</div>
+      </div>
+      <div class="options-list">${opts}</div>
+      <div class="explanation" id="exp-${qi}"><strong>Explanation:</strong> ${q.explain}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectAnswer(qi, oi) {
+  if (answered[qi] !== undefined) return;
+  answered[qi] = oi;
+  const q = questions[qi];
+  const card = document.getElementById('qcard-' + qi);
+  const isCorrect = oi === q.answer;
+
+  if (isCorrect) {
+    score++;
+    card.classList.add('correct');
+  } else {
+    card.classList.add('incorrect');
+  }
+
+  for (let i = 0; i < q.options.length; i++) {
+    const btn = document.getElementById(`opt-${qi}-${i}`);
+    btn.disabled = true;
+    if (i === q.answer && !isCorrect) btn.classList.add('reveal');
+    else if (i === oi) btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+  }
+
+  document.getElementById('exp-' + qi).classList.add('show');
+  updateProgress();
+
+  const total = Object.keys(answered).length;
+  if (total === questions.length) {
+    document.getElementById('submit-btn').style.display = 'inline-block';
+    document.getElementById('quiz-status').textContent = 'All questions answered — submit to see your final results!';
+  }
+}
+
+function updateProgress() {
+  const total = Object.keys(answered).length;
+  const correct = score;
+  document.getElementById('progress-label').textContent = `${total} / ${questions.length} answered`;
+  document.getElementById('progress-fill').style.width = ((total / questions.length) * 100) + '%';
+  if (total > 0) {
+    document.getElementById('score-badge').textContent = `Score: ${correct} / ${total}`;
+  }
+}
+
+function submitQuiz() {
+  const total = questions.length;
+  const pct = Math.round((score / total) * 100);
+  document.getElementById('results-score').textContent = score + '/' + total;
+  document.getElementById('res-correct').textContent = score;
+  document.getElementById('res-incorrect').textContent = total - score;
+  document.getElementById('res-pct').textContent = pct + '%';
+
+  let label, sub;
+  if (pct === 100) { label = '🏆 Perfect Score!'; sub = 'Outstanding! You have a solid command of SQLite3.'; }
+  else if (pct >= 80) { label = '🎉 Excellent Work!'; sub = 'Great job — just a couple of things to review.'; }
+  else if (pct >= 60) { label = '👍 Good Effort!'; sub = 'You know the basics. Review the explanations above to reinforce the rest.'; }
+  else { label = '📚 Keep Studying!'; sub = 'Head back to the Installation and Basics tabs to review — then try again.'; }
+
+  document.getElementById('results-label').textContent = label;
+  document.getElementById('results-sub').textContent = sub;
+  document.getElementById('quiz-results').classList.add('show');
+  document.getElementById('submit-btn').style.display = 'none';
+  document.getElementById('quiz-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetQuiz() {
+  buildQuiz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function switchTab(tab, sidebarItem, tabBtn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('tab-btn-' + tab).classList.add('active');
+
+  const sidebarItems = document.querySelectorAll('.sidebar-item');
+  const map = { install: 0, basics: 1, quiz: 2 };
+  if (sidebarItems[map[tab]]) sidebarItems[map[tab]].classList.add('active');
+}
+
+function switchOS(val) {
+  document.querySelectorAll('.os-panel').forEach(el => el.classList.remove('active'));
+  document.getElementById('panel-' + val).classList.add('active');
+}
+
+function scrollToLevel(level, btn) {
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const anchor = document.getElementById('level-' + level);
+  if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyCode(btn) {
+  const block = btn.parentElement.querySelector('code');
+  const text = block.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+buildQuiz();
+</script>
+</body>
+</html>

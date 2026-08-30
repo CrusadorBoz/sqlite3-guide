@@ -160,7 +160,7 @@
   .quiz-progress-wrap { flex: 1; max-width: 300px; }
   .quiz-progress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
   .quiz-progress-bar { height: 8px; background: #e7e7e7; border-radius: 4px; overflow: hidden; }
-  .quiz-progress-fill { height: 100%; background: var(--wp-blue); border-radius: 4px; transition: width 0.4s ease; }
+  .quiz-progress-fill { width: 0; height: 100%; background: var(--wp-blue); border-radius: 4px; transition: width 0.4s ease; }
   .quiz-score-badge { background: var(--wp-blue-light); color: var(--wp-blue-dark); font-weight: 700; font-size: 16px; padding: 8px 16px; border-radius: var(--radius); border: 1px solid #b3c9e3; }
 
   .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; transition: border-color 0.2s; }
@@ -246,3 +246,39 @@
   .level-intermediate-banner { background: linear-gradient(135deg, #9a6b00, #dba617); }
   .level-advanced-banner { background: linear-gradient(135deg, #8c1c1c, #d63638); }
   .level-anchor { margin-top: -70px; padding-top: 70px; pointer-events: none; }
+
+/* ── CSP utilities ──────────────────────────────────────────────────────────
+   Added 2026-08-29. bozcode.com sends `style-src 'self'` with no
+   'unsafe-inline', so every style="..." attribute on this page was being
+   discarded by the browser and had never rendered. These classes replace them.
+
+   .sq-hidden deliberately has NO !important: sqlite3-*.js reveals the submit
+   button with el.style.display = 'inline-block', and a JS-assigned inline style
+   is allowed under CSP but can only beat a class rule that is not !important. */
+.sq-mono      { font-family: 'JetBrains Mono', monospace; }
+.sq-code      { font-family: 'JetBrains Mono', monospace; background: var(--bg);
+                padding: 1px 5px; border-radius: 3px; }
+.sq-blue      { color: var(--wp-blue); }
+.sq-lede      { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+.sq-note      { font-size: 13px; color: var(--text-muted); }
+.sq-note-lh   { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+.sq-note-t2   { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.sq-note-t10  { font-size: 12.5px; color: var(--text-muted); margin-top: 10px; }
+.sq-note-t12  { font-size: 12.5px; color: var(--text-muted); margin-top: 12px; }
+.sq-subhead   { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.sq-h         { font-weight: 700; font-size: 15px; }
+.sq-tiny      { font-size: 12px; opacity: .85; margin-top: 1px; }
+.sq-icon      { vertical-align: -3px; margin-right: 5px; }
+.sq-row       { display: flex; align-items: center; gap: 16px; }
+.sq-hidden    { display: none; }
+.sq-m0        { margin: 0; }
+.sq-mt0       { margin-top: 0; }
+.sq-mt8       { margin-top: 8px; }
+.sq-mt12      { margin-top: 12px; }
+.sq-mt14      { margin-top: 14px; }
+.sq-mt18      { margin-top: 18px; }
+.sq-mt20      { margin-top: 20px; }
+.sq-mb18      { margin-bottom: 18px; }
+.sq-dot-green { background: #00a32a; }
+.sq-dot-amber { background: #dba617; }
+.sq-dot-red   { background: #d63638; }

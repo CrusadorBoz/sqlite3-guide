@@ -7,7 +7,7 @@
 <link rel="canonical" href="https://bozcode.com/examples/sqlite3/sqlite3-guide/sqlite3-guide-download.html">
 <meta name="description" content="Download the SQLite3 practice database used in the BozCode SQLite3 tutorial — includes a ready-to-query .db file and sample SQL queries.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="sqlite3-download.css?v=2">
+<link rel="stylesheet" href="sqlite3-download.css?v=3">
 </head>
 <body>
 
@@ -87,15 +87,15 @@
         <div class="card-title">What is SQLite3?</div>
       </div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;">SQLite is a self-contained, serverless, zero-configuration, transactional SQL database engine. Unlike MySQL or PostgreSQL, it stores the entire database in a single <code style="font-family:'JetBrains Mono',monospace;background:var(--bg);padding:1px 5px;border-radius:3px;">.db</code> file on disk — no daemon, no setup, just a file you can open and query.</p>
-        <div class="notice notice-info" style="margin-top:14px;"><strong>Why SQLite?</strong> It's built into Python, PHP, Node.js, Android, iOS, and countless other platforms. It's the most widely deployed database in the world.</div>
+        <p class="sq-note-lh">SQLite is a self-contained, serverless, zero-configuration, transactional SQL database engine. Unlike MySQL or PostgreSQL, it stores the entire database in a single <code class="sq-code">.db</code> file on disk — no daemon, no setup, just a file you can open and query.</p>
+        <div class="notice notice-info sq-mt14"><strong>Why SQLite?</strong> It's built into Python, PHP, Node.js, Android, iOS, and countless other platforms. It's the most widely deployed database in the world.</div>
       </div>
     </div>
 
     <!-- OS Selector -->
     <div class="os-select-wrap">
       <div class="os-select-label">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:5px;"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <svg class="sq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         Select your OS:
       </div>
       <div class="os-select-inner">
@@ -121,21 +121,21 @@
               <div class="step-num">1</div>
               <div class="step-content">
                 <h4>Download the precompiled binaries</h4>
-                <p>Visit <a href="https://sqlite.org/download.html" target="_blank" style="color:var(--wp-blue);">sqlite.org/download.html</a> and download the <strong>Precompiled Binaries for Windows</strong> bundle — grab <code style="font-family:'JetBrains Mono',monospace;">sqlite-tools-win-x64-*.zip</code>.</p>
+                <p>Visit <a class="sq-blue" href="https://sqlite.org/download.html" target="_blank">sqlite.org/download.html</a> and download the <strong>Precompiled Binaries for Windows</strong> bundle — grab <code class="sq-mono">sqlite-tools-win-x64-*.zip</code>.</p>
               </div>
             </div>
             <div class="step">
               <div class="step-num">2</div>
               <div class="step-content">
                 <h4>Extract the ZIP file</h4>
-                <p>Right-click the ZIP and select <em>Extract All</em>. You'll find three executables: <code style="font-family:'JetBrains Mono',monospace;">sqlite3.exe</code>, <code style="font-family:'JetBrains Mono',monospace;">sqldiff.exe</code>, and <code style="font-family:'JetBrains Mono',monospace;">sqlite3_analyzer.exe</code>.</p>
+                <p>Right-click the ZIP and select <em>Extract All</em>. You'll find three executables: <code class="sq-mono">sqlite3.exe</code>, <code class="sq-mono">sqldiff.exe</code>, and <code class="sq-mono">sqlite3_analyzer.exe</code>.</p>
               </div>
             </div>
             <div class="step">
               <div class="step-num">3</div>
               <div class="step-content">
                 <h4>Add to your PATH</h4>
-                <p>Move the folder (e.g. <code style="font-family:'JetBrains Mono',monospace;">C:\sqlite</code>) and add it to your System PATH so you can call <code style="font-family:'JetBrains Mono',monospace;">sqlite3</code> from any terminal. Search for <em>Environment Variables</em> → Edit System Environment Variables → Path → New.</p>
+                <p>Move the folder (e.g. <code class="sq-mono">C:\sqlite</code>) and add it to your System PATH so you can call <code class="sq-mono">sqlite3</code> from any terminal. Search for <em>Environment Variables</em> → Edit System Environment Variables → Path → New.</p>
               </div>
             </div>
             <div class="step">
@@ -144,11 +144,11 @@
                 <h4>Verify the installation</h4>
                 <p>Open a new Command Prompt or PowerShell and run:</p>
                 <div class="code-block"><button class="copy-btn">Copy</button><code>sqlite3 --version</code></div>
-                <p>You should see something like <code style="font-family:'JetBrains Mono',monospace;color:var(--wp-blue);">3.46.0 2024-05-23...</code></p>
+                <p>You should see something like <code class="sq-mono sq-blue">3.46.0 2024-05-23...</code></p>
               </div>
             </div>
           </div>
-          <div class="notice notice-warning" style="margin-top:20px;"><strong>Alternative:</strong> If you use <strong>Chocolatey</strong>, run <code style="font-family:'JetBrains Mono',monospace;">choco install sqlite</code> in an elevated terminal for a one-step install.</div>
+          <div class="notice notice-warning sq-mt20"><strong>Alternative:</strong> If you use <strong>Chocolatey</strong>, run <code class="sq-mono">choco install sqlite</code> in an elevated terminal for a one-step install.</div>
         </div>
       </div>
     </div>
@@ -161,7 +161,7 @@
           <span class="tag tag-mac">macOS</span>
         </div>
         <div class="card-body">
-          <div class="notice notice-success" style="margin-bottom:18px;"><strong>Good news:</strong> SQLite3 comes pre-installed on macOS! You may not need to do anything at all.</div>
+          <div class="notice notice-success sq-mb18"><strong>Good news:</strong> SQLite3 comes pre-installed on macOS! You may not need to do anything at all.</div>
           <div class="step-list">
             <div class="step">
               <div class="step-num">1</div>
@@ -176,7 +176,7 @@
               <div class="step-num">2</div>
               <div class="step-content">
                 <h4>Install via Homebrew (recommended)</h4>
-                <p>If you have <a href="https://brew.sh" target="_blank" style="color:var(--wp-blue);">Homebrew</a> installed (the standard macOS package manager), run:</p>
+                <p>If you have <a class="sq-blue" href="https://brew.sh" target="_blank">Homebrew</a> installed (the standard macOS package manager), run:</p>
                 <div class="code-block"><button class="copy-btn">Copy</button><code>brew install sqlite3</code></div>
               </div>
             </div>
@@ -184,7 +184,7 @@
               <div class="step-num">3</div>
               <div class="step-content">
                 <h4>Update your shell PATH (if needed)</h4>
-                <p>Homebrew installs to a custom prefix. To use the Homebrew version instead of the system one, add it to your path in <code style="font-family:'JetBrains Mono',monospace;">~/.zshrc</code> or <code style="font-family:'JetBrains Mono',monospace;">~/.bash_profile</code>:</p>
+                <p>Homebrew installs to a custom prefix. To use the Homebrew version instead of the system one, add it to your path in <code class="sq-mono">~/.zshrc</code> or <code class="sq-mono">~/.bash_profile</code>:</p>
                 <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm"># For Apple Silicon (M1/M2/M3):</span>
 export PATH="/opt/homebrew/opt/sqlite/bin:$PATH"
 
@@ -227,7 +227,7 @@ sudo apt install sqlite3 libsqlite3-dev</code></div>
               <div class="step-content">
                 <h4>Fedora / RHEL / CentOS</h4>
                 <div class="code-block"><button class="copy-btn">Copy</button><code>sudo dnf install sqlite sqlite-devel</code></div>
-                <p style="margin-top:8px;">On older CentOS/RHEL with yum:</p>
+                <p class="sq-mt8">On older CentOS/RHEL with yum:</p>
                 <div class="code-block"><button class="copy-btn">Copy</button><code>sudo yum install sqlite sqlite-devel</code></div>
               </div>
             </div>
@@ -247,7 +247,7 @@ sudo apt install sqlite3 libsqlite3-dev</code></div>
               </div>
             </div>
           </div>
-          <div class="notice notice-info" style="margin-top:18px;"><strong>Building from source?</strong> Download the amalgamation source from sqlite.org, then run <code style="font-family:'JetBrains Mono',monospace;">./configure &amp;&amp; make &amp;&amp; sudo make install</code>.</div>
+          <div class="notice notice-info sq-mt18"><strong>Building from source?</strong> Download the amalgamation source from sqlite.org, then run <code class="sq-mono">./configure &amp;&amp; make &amp;&amp; sudo make install</code>.</div>
         </div>
       </div>
     </div>
@@ -260,30 +260,30 @@ sudo apt install sqlite3 libsqlite3-dev</code></div>
     <!-- Level sub-nav -->
     <div class="level-btn-group">
       <button class="level-btn active" data-level="beginner">
-        <span class="level-dot" style="background:#00a32a;"></span> Beginner
+        <span class="level-dot sq-dot-green"></span> Beginner
       </button>
       <button class="level-btn" data-level="intermediate">
-        <span class="level-dot" style="background:#dba617;"></span> Intermediate
+        <span class="level-dot sq-dot-amber"></span> Intermediate
       </button>
       <button class="level-btn" data-level="advanced">
-        <span class="level-dot" style="background:#d63638;"></span> Advanced
+        <span class="level-dot sq-dot-red"></span> Advanced
       </button>
     </div>
 
     <!-- ── BEGINNER ── -->
     <div class="level-anchor" id="level-beginner"></div>
     <div class="level-banner level-beginner-banner">
-      <span class="level-dot-lg" style="background:#00a32a;"></span>
+      <span class="level-dot-lg sq-dot-green"></span>
       <div>
-        <div style="font-weight:700;font-size:15px;">Beginner</div>
-        <div style="font-size:12px;opacity:0.85;margin-top:1px;">Your first steps — open a database, create a table, and run basic queries</div>
+        <div class="sq-h">Beginner</div>
+        <div class="sq-tiny">Your first steps — open a database, create a table, and run basic queries</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">Step 1 — Opening the SQLite Shell</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Open a terminal and type <code style="font-family:'JetBrains Mono',monospace;">sqlite3</code> followed by a filename. If the file doesn't exist, SQLite creates it automatically. You'll land at the <code style="font-family:'JetBrains Mono',monospace;">sqlite&gt;</code> prompt.</p>
+        <p class="sq-lede">Open a terminal and type <code class="sq-mono">sqlite3</code> followed by a filename. If the file doesn't exist, SQLite creates it automatically. You'll land at the <code class="sq-mono">sqlite&gt;</code> prompt.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm"># Create (or open) a database file</span>
 sqlite3 mydb.db
 
@@ -292,14 +292,14 @@ sqlite3
 
 <span class="cm"># Check the version without entering the shell</span>
 sqlite3 --version</code></div>
-        <div class="notice notice-info" style="margin-top:12px;"><strong>Tip:</strong> Every SQLite database is just a file. You can copy, move, or email it like any other file.</div>
+        <div class="notice notice-info sq-mt12"><strong>Tip:</strong> Every SQLite database is just a file. You can copy, move, or email it like any other file.</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">Step 2 — Essential Dot-Commands</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Dot-commands start with a <code style="font-family:'JetBrains Mono',monospace;">.</code> and are shell meta-commands — they are NOT SQL. They control how the shell behaves and displays output.</p>
+        <p class="sq-lede">Dot-commands start with a <code class="sq-mono">.</code> and are shell meta-commands — they are NOT SQL. They control how the shell behaves and displays output.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code>.help              <span class="cm">-- list all dot-commands</span>
 .tables            <span class="cm">-- list tables in the database</span>
 .schema            <span class="cm">-- show CREATE statements for all tables</span>
@@ -310,14 +310,14 @@ sqlite3 --version</code></div>
 .mode csv          <span class="cm">-- comma-separated output</span>
 .databases         <span class="cm">-- show attached databases</span>
 .quit              <span class="cm">-- exit the shell (also Ctrl+D)</span></code></div>
-        <div class="notice notice-success" style="margin-top:12px;"><strong>First thing to do</strong> every time you open the shell: run <code style="font-family:'JetBrains Mono',monospace;">.headers on</code> and <code style="font-family:'JetBrains Mono',monospace;">.mode table</code> — it makes every query output much easier to read.</div>
+        <div class="notice notice-success sq-mt12"><strong>First thing to do</strong> every time you open the shell: run <code class="sq-mono">.headers on</code> and <code class="sq-mono">.mode table</code> — it makes every query output much easier to read.</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">Step 3 — Create Your First Table</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A table is where your data lives. Each column has a name and a data type. SQLite has five storage types: <code style="font-family:'JetBrains Mono',monospace;">INTEGER</code>, <code style="font-family:'JetBrains Mono',monospace;">TEXT</code>, <code style="font-family:'JetBrains Mono',monospace;">REAL</code>, <code style="font-family:'JetBrains Mono',monospace;">BLOB</code>, and <code style="font-family:'JetBrains Mono',monospace;">NULL</code>.</p>
+        <p class="sq-lede">A table is where your data lives. Each column has a name and a data type. SQLite has five storage types: <code class="sq-mono">INTEGER</code>, <code class="sq-mono">TEXT</code>, <code class="sq-mono">REAL</code>, <code class="sq-mono">BLOB</code>, and <code class="sq-mono">NULL</code>.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- The simplest possible table</span>
 <span class="kw">CREATE TABLE</span> users (
   id    <span class="fn">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
@@ -333,7 +333,7 @@ sqlite3 --version</code></div>
   age   <span class="fn">INTEGER</span>,
   created_at <span class="fn">TEXT</span> <span class="kw">DEFAULT</span> <span class="fn">CURRENT_TIMESTAMP</span>
 );</code></div>
-        <p style="font-size:12.5px;color:var(--text-muted);margin-top:10px;"><strong>PRIMARY KEY</strong> uniquely identifies each row. <strong>AUTOINCREMENT</strong> makes SQLite assign the next number automatically. <strong>NOT NULL</strong> requires a value. <strong>UNIQUE</strong> prevents duplicates.</p>
+        <p class="sq-note-t10"><strong>PRIMARY KEY</strong> uniquely identifies each row. <strong>AUTOINCREMENT</strong> makes SQLite assign the next number automatically. <strong>NOT NULL</strong> requires a value. <strong>UNIQUE</strong> prevents duplicates.</p>
       </div>
     </div>
 
@@ -354,7 +354,7 @@ sqlite3 --version</code></div>
 <span class="cm">-- Insert a row without specifying columns</span>
 <span class="cm">-- (must supply ALL columns in exact order)</span>
 <span class="kw">INSERT INTO</span> users <span class="kw">VALUES</span> (<span class="kw">NULL</span>, <span class="str">'Dave'</span>, <span class="str">'dave@x.com'</span>, <span class="num">40</span>, <span class="fn">CURRENT_TIMESTAMP</span>);</code></div>
-        <div class="notice notice-warning" style="margin-top:12px;"><strong>Best practice:</strong> Always name your columns explicitly. It makes your SQL resilient to future table changes.</div>
+        <div class="notice notice-warning sq-mt12"><strong>Best practice:</strong> Always name your columns explicitly. It makes your SQL resilient to future table changes.</div>
       </div>
     </div>
 
@@ -387,9 +387,9 @@ sqlite3 --version</code></div>
     <div class="card">
       <div class="card-header"><div class="card-title">Step 6 — Update &amp; Delete Rows</div></div>
       <div class="card-body">
-        <div class="two-col" style="margin:0;">
+        <div class="two-col sq-m0">
           <div>
-            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">UPDATE — change existing data</p>
+            <p class="sq-subhead">UPDATE — change existing data</p>
             <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Change one row by id</span>
 <span class="kw">UPDATE</span> users
 <span class="kw">SET</span> age = <span class="num">31</span>
@@ -402,7 +402,7 @@ sqlite3 --version</code></div>
 <span class="kw">WHERE</span> id = <span class="num">1</span>;</code></div>
           </div>
           <div>
-            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">DELETE — remove rows</p>
+            <p class="sq-subhead">DELETE — remove rows</p>
             <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Delete one specific row</span>
 <span class="kw">DELETE FROM</span> users
 <span class="kw">WHERE</span> id = <span class="num">2</span>;
@@ -414,17 +414,17 @@ sqlite3 --version</code></div>
 <span class="kw">DROP TABLE IF EXISTS</span> users;</code></div>
           </div>
         </div>
-        <div class="notice notice-warning" style="margin-top:14px;"><strong>Rule #1:</strong> Always write your WHERE clause <em>first</em> and verify it with a SELECT before running UPDATE or DELETE. A missing WHERE updates or deletes every row.</div>
+        <div class="notice notice-warning sq-mt14"><strong>Rule #1:</strong> Always write your WHERE clause <em>first</em> and verify it with a SELECT before running UPDATE or DELETE. A missing WHERE updates or deletes every row.</div>
       </div>
     </div>
 
     <!-- ── INTERMEDIATE ── -->
     <div class="level-anchor" id="level-intermediate"></div>
     <div class="level-banner level-intermediate-banner">
-      <span class="level-dot-lg" style="background:#dba617;"></span>
+      <span class="level-dot-lg sq-dot-amber"></span>
       <div>
-        <div style="font-weight:700;font-size:15px;">Intermediate</div>
-        <div style="font-size:12px;opacity:0.85;margin-top:1px;">Filtering, aggregation, joins, constraints, and modifying existing tables</div>
+        <div class="sq-h">Intermediate</div>
+        <div class="sq-tiny">Filtering, aggregation, joins, constraints, and modifying existing tables</div>
       </div>
     </div>
 
@@ -458,7 +458,7 @@ sqlite3 --version</code></div>
     <div class="card">
       <div class="card-header"><div class="card-title">Aggregate Functions &amp; GROUP BY</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Aggregate functions summarize multiple rows into a single result. Combine them with GROUP BY to compute per-group statistics.</p>
+        <p class="sq-lede">Aggregate functions summarize multiple rows into a single result. Combine them with GROUP BY to compute per-group statistics.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Built-in aggregate functions</span>
 <span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> users;             <span class="cm">-- total rows</span>
 <span class="kw">SELECT</span> <span class="fn">COUNT</span>(email) <span class="kw">FROM</span> users;         <span class="cm">-- rows where email is not NULL</span>
@@ -487,7 +487,7 @@ sqlite3 --version</code></div>
     <div class="card">
       <div class="card-header"><div class="card-title">Joining Tables</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">JOINs combine rows from two or more tables based on a related column. Set up two tables first:</p>
+        <p class="sq-lede">JOINs combine rows from two or more tables based on a related column. Set up two tables first:</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Setup: two related tables</span>
 <span class="kw">CREATE TABLE</span> departments (
   id   <span class="fn">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
@@ -514,7 +514,7 @@ sqlite3 --version</code></div>
 <span class="kw">FROM</span> employees a
 <span class="kw">JOIN</span> employees b <span class="kw">ON</span> a.dept_id = b.dept_id
 <span class="kw">WHERE</span> a.id != b.id;</code></div>
-        <div class="notice notice-info" style="margin-top:12px;"><strong>INNER JOIN</strong> = only matched rows. <strong>LEFT JOIN</strong> = all left-table rows + matched right-table rows (NULLs where no match). SQLite does not support RIGHT JOIN or FULL OUTER JOIN directly.</div>
+        <div class="notice notice-info sq-mt12"><strong>INNER JOIN</strong> = only matched rows. <strong>LEFT JOIN</strong> = all left-table rows + matched right-table rows (NULLs where no match). SQLite does not support RIGHT JOIN or FULL OUTER JOIN directly.</div>
       </div>
     </div>
 
@@ -536,16 +536,16 @@ sqlite3 --version</code></div>
   <span class="kw">SELECT</span> id, name, email <span class="kw">FROM</span> users;  <span class="cm">-- omit 'age'</span>
 <span class="kw">DROP TABLE</span> users;
 <span class="kw">ALTER TABLE</span> users_new <span class="kw">RENAME TO</span> users;</code></div>
-        <div class="notice notice-warning" style="margin-top:12px;"><strong>SQLite limitation:</strong> ALTER TABLE is much more restricted than MySQL or PostgreSQL. You cannot drop columns, change column types, or add constraints to existing columns directly.</div>
+        <div class="notice notice-warning sq-mt12"><strong>SQLite limitation:</strong> ALTER TABLE is much more restricted than MySQL or PostgreSQL. You cannot drop columns, change column types, or add constraints to existing columns directly.</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">Useful Built-in Functions</div></div>
       <div class="card-body">
-        <div class="two-col" style="margin:0;">
+        <div class="two-col sq-m0">
           <div>
-            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">Text functions</p>
+            <p class="sq-subhead">Text functions</p>
             <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- String operations</span>
 <span class="fn">LENGTH</span>(<span class="str">'hello'</span>)         <span class="cm">-- 5</span>
 <span class="fn">UPPER</span>(<span class="str">'hello'</span>)         <span class="cm">-- HELLO</span>
@@ -560,7 +560,7 @@ sqlite3 --version</code></div>
   <span class="kw">AS</span> full_name <span class="kw">FROM</span> people;</code></div>
           </div>
           <div>
-            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">Numeric &amp; date functions</p>
+            <p class="sq-subhead">Numeric &amp; date functions</p>
             <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Math</span>
 <span class="fn">ABS</span>(-<span class="num">5</span>)             <span class="cm">-- 5</span>
 <span class="fn">ROUND</span>(<span class="num">3.14159</span>, <span class="num">2</span>)  <span class="cm">-- 3.14</span>
@@ -584,17 +584,17 @@ sqlite3 --version</code></div>
     <!-- ── ADVANCED ── -->
     <div class="level-anchor" id="level-advanced"></div>
     <div class="level-banner level-advanced-banner">
-      <span class="level-dot-lg" style="background:#d63638;"></span>
+      <span class="level-dot-lg sq-dot-red"></span>
       <div>
-        <div style="font-weight:700;font-size:15px;">Advanced</div>
-        <div style="font-size:12px;opacity:0.85;margin-top:1px;">Indexes, views, subqueries, transactions, CTEs, triggers, and performance</div>
+        <div class="sq-h">Advanced</div>
+        <div class="sq-tiny">Indexes, views, subqueries, transactions, CTEs, triggers, and performance</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">Indexes — Speed Up Queries</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">An index lets SQLite find rows without scanning every row. Create them on columns you frequently filter or sort on.</p>
+        <p class="sq-lede">An index lets SQLite find rows without scanning every row. Create them on columns you frequently filter or sort on.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Create a basic index</span>
 <span class="kw">CREATE INDEX</span> idx_users_name <span class="kw">ON</span> users (name);
 
@@ -614,14 +614,14 @@ sqlite3 --version</code></div>
 <span class="cm">-- EXPLAIN QUERY PLAN — see if your index is being used</span>
 <span class="kw">EXPLAIN QUERY PLAN</span>
 <span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> email = <span class="str">'g@x.com'</span>;</code></div>
-        <div class="notice notice-warning" style="margin-top:12px;"><strong>Trade-off:</strong> Indexes speed up reads but slow down writes (INSERT/UPDATE/DELETE) because the index must be updated too. Only index columns you actually query on.</div>
+        <div class="notice notice-warning sq-mt12"><strong>Trade-off:</strong> Indexes speed up reads but slow down writes (INSERT/UPDATE/DELETE) because the index must be updated too. Only index columns you actually query on.</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">Views — Saved Queries</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A view is a named query stored in the database. It looks and acts like a table but doesn't store data itself — it re-runs the query each time you access it.</p>
+        <p class="sq-lede">A view is a named query stored in the database. It looks and acts like a table but doesn't store data itself — it re-runs the query each time you access it.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Create a view</span>
 <span class="kw">CREATE VIEW</span> active_users <span class="kw">AS</span>
   <span class="kw">SELECT</span> id, name, email
@@ -643,7 +643,7 @@ sqlite3 --version</code></div>
     <div class="card">
       <div class="card-header"><div class="card-title">Subqueries</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A subquery is a SELECT nested inside another SQL statement. It can appear in WHERE, FROM, or SELECT clauses.</p>
+        <p class="sq-lede">A subquery is a SELECT nested inside another SQL statement. It can appear in WHERE, FROM, or SELECT clauses.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- WHERE subquery — find users older than average</span>
 <span class="kw">SELECT</span> name, age <span class="kw">FROM</span> users
 <span class="kw">WHERE</span> age > (<span class="kw">SELECT</span> <span class="fn">AVG</span>(age) <span class="kw">FROM</span> users);
@@ -674,7 +674,7 @@ sqlite3 --version</code></div>
     <div class="card">
       <div class="card-header"><div class="card-title">Transactions</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A transaction groups multiple statements into a single all-or-nothing operation. If anything fails, you roll back and nothing is saved.</p>
+        <p class="sq-lede">A transaction groups multiple statements into a single all-or-nothing operation. If anything fails, you roll back and nothing is saved.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Wrap multiple operations in a transaction</span>
 <span class="kw">BEGIN TRANSACTION</span>;
 
@@ -696,14 +696,14 @@ sqlite3 --version</code></div>
 <span class="kw">UPDATE</span> users <span class="kw">SET</span> age = <span class="num">99</span> <span class="kw">WHERE</span> id = <span class="num">1</span>;
 <span class="kw">ROLLBACK TO</span> before_update;  <span class="cm">-- undoes only since savepoint</span>
 <span class="kw">RELEASE</span> before_update;</code></div>
-        <div class="notice notice-info" style="margin-top:12px;"><strong>Why use transactions?</strong> Performance — wrapping 1000 INSERTs in one transaction can be 10–100x faster than auto-committing each one. Data integrity — either all changes happen, or none do.</div>
+        <div class="notice notice-info sq-mt12"><strong>Why use transactions?</strong> Performance — wrapping 1000 INSERTs in one transaction can be 10–100x faster than auto-committing each one. Data integrity — either all changes happen, or none do.</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">CTEs — Common Table Expressions</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A CTE (WITH clause) creates a temporary named result set you can reference in the same query. They make complex queries readable and can be recursive.</p>
+        <p class="sq-lede">A CTE (WITH clause) creates a temporary named result set you can reference in the same query. They make complex queries readable and can be recursive.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Basic CTE — name a subquery for readability</span>
 <span class="kw">WITH</span> high_spenders <span class="kw">AS</span> (
   <span class="kw">SELECT</span> user_id, <span class="fn">SUM</span>(total) <span class="kw">AS</span> lifetime
@@ -742,7 +742,7 @@ sqlite3 --version</code></div>
     <div class="card">
       <div class="card-header"><div class="card-title">Triggers</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">A trigger is SQL that runs automatically when a specific event (INSERT, UPDATE, DELETE) happens on a table.</p>
+        <p class="sq-lede">A trigger is SQL that runs automatically when a specific event (INSERT, UPDATE, DELETE) happens on a table.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Auto-set updated_at timestamp on row change</span>
 <span class="kw">CREATE TRIGGER</span> set_updated_at
 <span class="kw">AFTER UPDATE ON</span> users
@@ -765,14 +765,14 @@ sqlite3 --version</code></div>
 
 <span class="cm">-- Drop a trigger</span>
 <span class="kw">DROP TRIGGER IF EXISTS</span> set_updated_at;</code></div>
-        <div class="notice notice-info" style="margin-top:12px;">Inside a trigger, <code style="font-family:'JetBrains Mono',monospace;">NEW.column</code> refers to the incoming value and <code style="font-family:'JetBrains Mono',monospace;">OLD.column</code> refers to the previous value (for UPDATE and DELETE).</div>
+        <div class="notice notice-info sq-mt12">Inside a trigger, <code class="sq-mono">NEW.column</code> refers to the incoming value and <code class="sq-mono">OLD.column</code> refers to the previous value (for UPDATE and DELETE).</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">PRAGMA — Database Settings &amp; Info</div></div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">PRAGMAs are special commands that control SQLite's internal settings and expose metadata.</p>
+        <p class="sq-lede">PRAGMAs are special commands that control SQLite's internal settings and expose metadata.</p>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Enforce foreign key constraints (OFF by default!)</span>
 <span class="kw">PRAGMA</span> foreign_keys = ON;
 
@@ -796,14 +796,14 @@ sqlite3 --version</code></div>
 
 <span class="cm">-- See SQLite version info</span>
 <span class="kw">SELECT</span> <span class="fn">sqlite_version</span>();</code></div>
-        <div class="notice notice-warning" style="margin-top:12px;"><strong>Important:</strong> <code style="font-family:'JetBrains Mono',monospace;">PRAGMA foreign_keys = ON</code> must be run every time you open a connection — it resets to OFF by default. Foreign key constraints are silently ignored if this is off.</div>
+        <div class="notice notice-warning sq-mt12"><strong>Important:</strong> <code class="sq-mono">PRAGMA foreign_keys = ON</code> must be run every time you open a connection — it resets to OFF by default. Foreign key constraints are silently ignored if this is off.</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">UPSERT, Window Functions &amp; JSON</div></div>
       <div class="card-body">
-        <div class="section-heading" style="margin-top:0;">UPSERT (INSERT OR REPLACE)</div>
+        <div class="section-heading sq-mt0">UPSERT (INSERT OR REPLACE)</div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Insert or update if the key already exists (SQLite 3.24+)</span>
 <span class="kw">INSERT INTO</span> users (id, name, age)
 <span class="kw">VALUES</span> (<span class="num">1</span>, <span class="str">'Gordon'</span>, <span class="num">31</span>)
@@ -853,13 +853,13 @@ sqlite3 --version</code></div>
 
     <div class="quiz-header">
       <div>
-        <div style="font-size:15px;font-weight:700;">SQLite3 Knowledge Quiz</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">10 questions — click an option to answer</div>
+        <div class="sq-h">SQLite3 Knowledge Quiz</div>
+        <div class="sq-note-t2">10 questions — click an option to answer</div>
       </div>
-      <div style="display:flex;align-items:center;gap:16px;">
+      <div class="sq-row">
         <div class="quiz-progress-wrap">
           <div class="quiz-progress-label" id="progress-label">0 / 10 answered</div>
-          <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="progress-fill" style="width:0%"></div></div>
+          <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="progress-fill"></div></div>
         </div>
         <div class="quiz-score-badge" id="score-badge">Score: 0 / 0</div>
       </div>
@@ -868,9 +868,9 @@ sqlite3 --version</code></div>
     <div id="questions-container"></div>
 
     <div class="quiz-actions">
-      <button class="btn-primary" id="submit-btn" style="display:none">Submit Quiz</button>
+      <button class="btn-primary sq-hidden" id="submit-btn">Submit Quiz</button>
       <button class="btn-secondary" id="reset-btn">Reset Quiz</button>
-      <span id="quiz-status" style="font-size:13px;color:var(--text-muted);"></span>
+      <span class="sq-note" id="quiz-status"></span>
     </div>
 
     <div class="quiz-results" id="quiz-results">

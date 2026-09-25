@@ -23,7 +23,8 @@
      location /examples/sqlite3/sqlite3-guide/) and is NOT rendered by
      Django, so no Django template syntax may appear anywhere in it. -->
 <link rel="stylesheet" href="/static/css/fonts.css?v=2">
-<link rel="stylesheet" href="sqlite3-tutorial.css?v=6">
+<link rel="stylesheet" href="sqlite3-tutorial.css?v=7">
+<link rel="stylesheet" href="/static/css/back-button.css?v=1">
 </head>
 <body>
 
@@ -34,7 +35,7 @@
     <span>SQLite3 <span>Guide</span></span>
   </div>
   <div class="wp-bar-right">
-    <a href="/" class="wp-bar-badge">&#8592; Home</a>
+    <a class="site-back site-back--inline" href="/examples/database/"><span class="site-back-arrow" aria-hidden="true">&#8592;</span> Back to Database Instructions</a>
     <div class="wp-bar-badge">v 5.3</div>
   </div>
 </div>
@@ -302,6 +303,15 @@ sudo apt install sqlite3 libsqlite3-dev</code></div>
       <div class="card-header"><div class="card-title">Step 1 — Opening the SQLite Shell</div></div>
       <div class="card-body">
         <p class="sq-lede">Open a terminal and type <code class="sq-mono">sqlite3</code> followed by a filename. If the file doesn't exist, SQLite creates it automatically. You'll land at the <code class="sq-mono">sqlite&gt;</code> prompt.</p>
+        <div class="sq-lesson">
+          <p>A <strong>database</strong> is an organised collection of data that a program can store, search, and change reliably. Most database systems, such as MySQL or PostgreSQL, run as a separate <em>server</em> program that other programs connect to over a network. SQLite is different: it is <strong>serverless</strong>. The entire database, including every table, row, and index, lives in one ordinary file on disk, and the SQLite library reads and writes that file directly. There is nothing to install as a service, no user accounts to set up, and nothing running in the background. That simplicity is why SQLite is the most widely deployed database in the world: it is built into every smartphone, every major web browser, and countless desktop programs.</p>
+          <p>The <code class="sq-mono">sqlite3</code> command is SQLite's <strong>command-line shell</strong>: an interactive program where you type a command, press Enter, and see the result immediately. Giving it a filename opens that database, creating the file if it doesn't exist yet. Run it with no filename and you get an <strong>in-memory database</strong>, which lives only in RAM and vanishes when you quit. That makes it perfect for experiments you don't want to keep. The <code class="sq-mono">sqlite&gt;</code> prompt tells you the shell is waiting for input. If a statement runs over several lines, the prompt changes to <code class="sq-mono">...&gt;</code> until you finish it with a semicolon.</p>
+          <dl class="sq-terms">
+            <dt>Serverless database</dt><dd>A database that is a single file read and written directly by a library, with no separate server program.</dd>
+            <dt>Shell</dt><dd>An interactive text program that runs each command as you type it and prints the result.</dd>
+            <dt>In-memory database</dt><dd>A temporary database held in RAM; it disappears when the shell closes.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm"># Create (or open) a database file</span>
 sqlite3 mydb.db
 
@@ -343,6 +353,15 @@ Use ".open FILENAME" to reopen on a persistent database.
       <div class="card-header"><div class="card-title">Step 2 — Essential Dot-Commands</div></div>
       <div class="card-body">
         <p class="sq-lede">Dot-commands start with a <code class="sq-mono">.</code> and are shell meta-commands — they are NOT SQL. They control how the shell behaves and displays output.</p>
+        <div class="sq-lesson">
+          <p>Inside the shell you can type two completely different kinds of input, and telling them apart is the first thing to learn. <strong>SQL statements</strong>, such as <code class="sq-mono">SELECT</code>, <code class="sq-mono">CREATE TABLE</code>, and <code class="sq-mono">INSERT</code>, are the standard database language, understood by SQLite and by every other SQL database. They must end with a semicolon, and they are what you would also send from a Python, PHP, or C program. <strong>Dot-commands</strong> are instructions to the shell program itself, not to the database. They start with a period, take up exactly one line, need no semicolon, and exist only in this command-line tool.</p>
+          <p>Dot-commands fall into two groups. Some let you <em>inspect</em> the database: <code class="sq-mono">.tables</code> lists the tables, <code class="sq-mono">.schema</code> shows the <code class="sq-mono">CREATE</code> statement that defined each one, and <code class="sq-mono">.databases</code> shows which file is open. Others change how results are <em>displayed</em>: <code class="sq-mono">.headers on</code> prints column names above results, and <code class="sq-mono">.mode</code> chooses a layout such as a boxed table, fixed columns, or CSV for exporting to a spreadsheet. These display settings reset every time you start the shell. If you want them permanently, put them in a file named <code class="sq-mono">.sqliterc</code> in your home folder, and the shell runs it at startup.</p>
+          <dl class="sq-terms">
+            <dt>SQL statement</dt><dd>A command in the standard database language; it ends with a semicolon and works in any SQL database.</dd>
+            <dt>Dot-command</dt><dd>A one-line instruction to the sqlite3 shell itself, starting with a period; it isn't SQL.</dd>
+            <dt>Schema</dt><dd>The structure of a database: its tables, columns, types, and constraints.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code>.help              <span class="cm">-- list all dot-commands</span>
 .tables            <span class="cm">-- list tables in the database</span>
 .schema            <span class="cm">-- show CREATE statements for all tables</span>
@@ -388,6 +407,15 @@ main: /home/gordon/mydb.db r/w
       <div class="card-header"><div class="card-title">Step 3 — Create Your First Table</div></div>
       <div class="card-body">
         <p class="sq-lede">A table is where your data lives. Each column has a name and a data type. SQLite has five storage types: <code class="sq-mono">INTEGER</code>, <code class="sq-mono">TEXT</code>, <code class="sq-mono">REAL</code>, <code class="sq-mono">BLOB</code>, and <code class="sq-mono">NULL</code>.</p>
+        <div class="sq-lesson">
+          <p>A <strong>relational database</strong> stores data in <strong>tables</strong>, grids of rows and columns much like a spreadsheet, but with firmer rules. Each <strong>column</strong> describes one attribute, such as a name or an age, and each <strong>row</strong> is one record, such as one user. <code class="sq-mono">CREATE TABLE</code> defines that structure, the table's <em>schema</em>, before any data goes in. Every table should have a <strong>primary key</strong>: a column whose value uniquely identifies each row, so a row can always be found, changed, or referred to from another table. In SQLite, a column declared <code class="sq-mono">INTEGER PRIMARY KEY</code> is special: it becomes the row's internal ID (the <em>rowid</em>), and SQLite fills it in automatically when you don't supply a value.</p>
+          <p><strong>Constraints</strong> are rules the database enforces for you, so bad data is rejected at the door. <code class="sq-mono">NOT NULL</code> means the column must always have a value, <code class="sq-mono">UNIQUE</code> forbids two rows from sharing a value (ideal for email addresses), and <code class="sq-mono">DEFAULT</code> supplies a value when an insert leaves the column out. <code class="sq-mono">IF NOT EXISTS</code> makes a script safe to run twice. One SQLite quirk is worth knowing early: its column types are <em>flexible</em>. A column's declared type is a preference, called <em>type affinity</em>, rather than a strict rule. SQLite converts values where it sensibly can (the text <code class="sq-mono">'42'</code> stored in an <code class="sq-mono">INTEGER</code> column becomes the number 42), but it will still accept <code class="sq-mono">'abc'</code> in that column rather than raise an error. Since version 3.37 you can add the word <code class="sq-mono">STRICT</code> after a table definition to get rigid, error-raising types instead.</p>
+          <dl class="sq-terms">
+            <dt>Primary key</dt><dd>A column (or set of columns) whose value uniquely identifies each row.</dd>
+            <dt>Constraint</dt><dd>A rule enforced by the database, such as NOT NULL, UNIQUE, or DEFAULT.</dd>
+            <dt>Type affinity</dt><dd>SQLite's flexible typing: a column's declared type is a preference, not a strict rule.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- The simplest possible table</span>
 <span class="kw">CREATE TABLE</span> users (
   id    <span class="fn">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
@@ -439,6 +467,15 @@ CREATE TABLE users (
     <div class="card">
       <div class="card-header"><div class="card-title">Step 4 — Insert Data</div></div>
       <div class="card-body">
+        <div class="sq-lesson">
+          <p><code class="sq-mono">INSERT</code> adds new rows to a table. The statement names the table, lists the columns you're filling, and then gives the values in the same order: the first value goes into the first column named, the second into the second, and so on. Any column you leave out receives its <code class="sq-mono">DEFAULT</code> value, or <code class="sq-mono">NULL</code> if it has none, and an <code class="sq-mono">INTEGER PRIMARY KEY</code> is numbered automatically. A single <code class="sq-mono">INSERT</code> can add many rows by listing several parenthesised groups after <code class="sq-mono">VALUES</code>, which is both shorter and faster than repeating the statement.</p>
+          <p>Two details trip up newcomers. First, in SQL, text values go in <strong>single quotes</strong>: <code class="sq-mono">'Alice'</code>. Double quotes are meant for the names of tables and columns. To put an apostrophe inside a text value, double it: <code class="sq-mono">'O''Brien'</code>. Second, when a program builds an <code class="sq-mono">INSERT</code> from user input, it must never paste that input directly into the SQL text. Real applications use <strong>parameters</strong> (placeholders such as <code class="sq-mono">?</code>) and pass the values separately. This prevents <em>SQL injection</em>, where a malicious value rewrites the query. After an insert, the built-in function <code class="sq-mono">last_insert_rowid()</code> returns the ID of the row that was just created.</p>
+          <dl class="sq-terms">
+            <dt>Row / record</dt><dd>One entry in a table, with a value (or NULL) for every column.</dd>
+            <dt>NULL</dt><dd>SQL's marker for &ldquo;no value&rdquo; or &ldquo;unknown&rdquo;; it isn't zero or an empty string.</dd>
+            <dt>SQL injection</dt><dd>An attack where untrusted input is pasted into SQL text; prevented by using parameters.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Insert one row (specify columns explicitly)</span>
 <span class="kw">INSERT INTO</span> users (name, email, age)
 <span class="kw">VALUES</span> (<span class="str">'Gordon'</span>, <span class="str">'gordon@example.com'</span>, <span class="num">30</span>);
@@ -476,6 +513,15 @@ CREATE TABLE users (
     <div class="card">
       <div class="card-header"><div class="card-title">Step 5 — Read Data with SELECT</div></div>
       <div class="card-body">
+        <div class="sq-lesson">
+          <p><code class="sq-mono">SELECT</code> is how you ask a database questions, and it is by far the most used SQL statement. Its result is itself a small table, called a <strong>result set</strong>. A query is built from <strong>clauses</strong>, each with one job. <code class="sq-mono">SELECT</code> lists the columns you want (<code class="sq-mono">*</code> means all of them). <code class="sq-mono">FROM</code> names the table. <code class="sq-mono">WHERE</code> keeps only the rows that satisfy a condition. <code class="sq-mono">ORDER BY</code> sorts them, ascending by default or descending with <code class="sq-mono">DESC</code>. <code class="sq-mono">LIMIT</code> caps how many come back, and adding <code class="sq-mono">OFFSET</code> skips some first, which is how page 2 of a list is built.</p>
+          <p>SQL is <strong>declarative</strong>: you describe <em>what</em> result you want, not how to find it, and the database works out an efficient way to produce it. It helps to know that SQLite logically processes the clauses in a different order from how you write them: first <code class="sq-mono">FROM</code> (which table), then <code class="sq-mono">WHERE</code> (which rows), then <code class="sq-mono">SELECT</code> (which columns), then <code class="sq-mono">ORDER BY</code>, then <code class="sq-mono">LIMIT</code>. Also, rows have <strong>no guaranteed order</strong> unless you ask for one. Without <code class="sq-mono">ORDER BY</code>, SQLite may return them in any order it likes, and that order can change as the table grows. Finally, <code class="sq-mono">COUNT(*)</code> is the first of the <em>aggregate</em> functions you'll meet at the Intermediate level: instead of listing rows, it reports how many there are.</p>
+          <dl class="sq-terms">
+            <dt>Query</dt><dd>A request for data, written as a SELECT statement.</dd>
+            <dt>Clause</dt><dd>One part of a statement with a single job: FROM, WHERE, ORDER BY, LIMIT&hellip;</dd>
+            <dt>Result set</dt><dd>The rows and columns a query returns: a temporary table.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Get everything</span>
 <span class="kw">SELECT</span> * <span class="kw">FROM</span> users;
 
@@ -558,6 +604,15 @@ CREATE TABLE users (
     <div class="card">
       <div class="card-header"><div class="card-title">Step 6 — Update &amp; Delete Rows</div></div>
       <div class="card-body">
+        <div class="sq-lesson">
+          <p><code class="sq-mono">UPDATE</code> changes values in rows that already exist, and <code class="sq-mono">DELETE</code> removes rows. Both work on <em>every row that matches their <code class="sq-mono">WHERE</code> clause</em>, and that is the single most important fact about them. With a precise <code class="sq-mono">WHERE</code>, such as a primary-key match like <code class="sq-mono">WHERE id = 1</code>, exactly one row is affected. With a loose one, many rows are. And with <strong>no <code class="sq-mono">WHERE</code> at all, every row in the table is changed or deleted</strong>. The shell won't ask for confirmation, and outside a transaction (covered at the Advanced level) there is no undo. After either statement, <code class="sq-mono">SELECT changes();</code> reports how many rows were affected.</p>
+          <p>That is why professionals follow a simple habit: write the <code class="sq-mono">WHERE</code> clause first, run it as a <code class="sq-mono">SELECT</code> to see exactly which rows it matches, and only then turn it into an <code class="sq-mono">UPDATE</code> or <code class="sq-mono">DELETE</code>. Three statements remove things at different scales. <code class="sq-mono">DELETE FROM users WHERE &hellip;</code> removes chosen rows. <code class="sq-mono">DELETE FROM users</code> empties the table but keeps its structure, so you can insert into it again. <code class="sq-mono">DROP TABLE users</code> removes the table itself: structure, data, indexes and all.</p>
+          <dl class="sq-terms">
+            <dt>UPDATE / DELETE</dt><dd>Change / remove every row matching the WHERE clause.</dd>
+            <dt>Rows affected</dt><dd>How many rows a statement changed; shown by SELECT changes().</dd>
+            <dt>DROP</dt><dd>Removes a whole database object, such as a table, rather than its rows.</dd>
+          </dl>
+        </div>
         <div class="two-col sq-m0">
           <div>
             <p class="sq-subhead">UPDATE — change existing data</p>
@@ -643,6 +698,15 @@ CREATE TABLE users (
     <div class="card">
       <div class="card-header"><div class="card-title">Advanced WHERE Filtering</div></div>
       <div class="card-body">
+        <div class="sq-lesson">
+          <p>A <code class="sq-mono">WHERE</code> condition is a <strong>boolean expression</strong>: for each row it works out to true or false, and only rows where it's true are kept. You combine simple conditions with <code class="sq-mono">AND</code> (both must hold) and <code class="sq-mono">OR</code> (either may hold). <code class="sq-mono">AND</code> is evaluated before <code class="sq-mono">OR</code>, just as multiplication comes before addition, so <code class="sq-mono">a OR b AND c</code> means <code class="sq-mono">a OR (b AND c)</code>. Always add parentheses when you mix them; it's the most common source of &ldquo;why does this return the wrong rows?&rdquo; SQL provides shorthands for common patterns. <code class="sq-mono">BETWEEN x AND y</code> is an inclusive range, and <code class="sq-mono">IN (&hellip;)</code> matches any value in a list, which is tidier than a chain of <code class="sq-mono">OR</code>s.</p>
+          <p><code class="sq-mono">LIKE</code> matches text against a <strong>pattern</strong>: <code class="sq-mono">%</code> stands for any run of characters (including none), and <code class="sq-mono">_</code> for exactly one character. In SQLite, <code class="sq-mono">LIKE</code> ignores upper and lower case for English letters, so <code class="sq-mono">'Bob' LIKE 'b%'</code> is true. Use <code class="sq-mono">GLOB</code> when you need case-sensitive matching. Finally, <code class="sq-mono">NULL</code> needs special care, because it means &ldquo;unknown&rdquo;. Any comparison with an unknown value is itself unknown, so <code class="sq-mono">email = NULL</code> is <em>never</em> true, not even for rows where the email really is missing. SQL calls this <strong>three-valued logic</strong> (true, false, unknown). To test for missing values, always use <code class="sq-mono">IS NULL</code> or <code class="sq-mono">IS NOT NULL</code>.</p>
+          <dl class="sq-terms">
+            <dt>Boolean expression</dt><dd>A condition that evaluates to true or false for each row.</dd>
+            <dt>Wildcard</dt><dd>In LIKE patterns, % matches any run of characters and _ matches exactly one.</dd>
+            <dt>Three-valued logic</dt><dd>SQL's true / false / unknown; any comparison with NULL is unknown.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- AND / OR logic</span>
 <span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> age > <span class="num">25</span> <span class="kw">AND</span> age < <span class="num">40</span>;
 <span class="kw">SELECT</span> * <span class="kw">FROM</span> users <span class="kw">WHERE</span> name = <span class="str">'Alice'</span> <span class="kw">OR</span> name = <span class="str">'Bob'</span>;
@@ -717,6 +781,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">Aggregate Functions &amp; GROUP BY</div></div>
       <div class="card-body">
         <p class="sq-lede">Aggregate functions summarize multiple rows into a single result. Combine them with GROUP BY to compute per-group statistics.</p>
+        <div class="sq-lesson">
+          <p>Ordinary functions work on one value at a time. <strong>Aggregate functions</strong> work on a whole column of rows and <em>collapse</em> them into a single summary value: <code class="sq-mono">COUNT</code> counts, <code class="sq-mono">SUM</code> adds, <code class="sq-mono">AVG</code> averages, and <code class="sq-mono">MIN</code>/<code class="sq-mono">MAX</code> find the extremes. Aggregates skip <code class="sq-mono">NULL</code>s, which explains a subtle difference: <code class="sq-mono">COUNT(*)</code> counts rows, while <code class="sq-mono">COUNT(email)</code> counts only the rows where the email is <em>not</em> NULL. <code class="sq-mono">AS</code> gives a result column a readable name, called an <strong>alias</strong>.</p>
+          <p><code class="sq-mono">GROUP BY</code> turns a single summary into a summary <em>per category</em>. SQLite sorts the rows into buckets that share the same value (for example, one bucket per order status), then runs the aggregate once for each bucket, producing one output row per group. To filter those groups, use <code class="sq-mono">HAVING</code>. The difference from <code class="sq-mono">WHERE</code> is timing: <code class="sq-mono">WHERE</code> removes individual rows <em>before</em> they are grouped, and <code class="sq-mono">HAVING</code> removes whole groups <em>after</em> the aggregates are calculated. That's why <code class="sq-mono">WHERE COUNT(*) &gt; 5</code> is an error but <code class="sq-mono">HAVING COUNT(*) &gt; 5</code> works. One rule keeps grouped queries correct: every column in the <code class="sq-mono">SELECT</code> list should either appear in <code class="sq-mono">GROUP BY</code> or be inside an aggregate.</p>
+          <dl class="sq-terms">
+            <dt>Aggregate function</dt><dd>Summarises many rows into one value: COUNT, SUM, AVG, MIN, MAX.</dd>
+            <dt>GROUP BY</dt><dd>Splits rows into groups sharing a value, producing one summary row per group.</dd>
+            <dt>HAVING vs WHERE</dt><dd>Filters groups after aggregation / filters rows before grouping.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Built-in aggregate functions</span>
 <span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> users;             <span class="cm">-- total rows</span>
 <span class="kw">SELECT</span> <span class="fn">COUNT</span>(email) <span class="kw">FROM</span> users;         <span class="cm">-- rows where email is not NULL</span>
@@ -796,6 +869,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">Joining Tables</div></div>
       <div class="card-body">
         <p class="sq-lede">JOINs combine rows from two or more tables based on a related column. Set up two tables first:</p>
+        <div class="sq-lesson">
+          <p>Good database design avoids storing the same fact twice. Instead of writing a department's name on every employee's row, you store departments in their own table and give each employee a <code class="sq-mono">dept_id</code> that points to one department. This is called <strong>normalisation</strong>, and it means a department's name only ever needs changing in one place. The pointing column is a <strong>foreign key</strong>: its values are the primary keys of rows in another table. The <code class="sq-mono">REFERENCES</code> clause declares that relationship, and in SQLite it is only enforced once <code class="sq-mono">PRAGMA foreign_keys = ON</code> has been run (see the PRAGMA step).</p>
+          <p>A <strong>JOIN</strong> reassembles the related rows at query time. The <code class="sq-mono">ON</code> condition says how the rows line up: <code class="sq-mono">e.dept_id = d.id</code>. Short table <em>aliases</em> such as <code class="sq-mono">e</code> and <code class="sq-mono">d</code> keep the query readable and resolve columns that share a name. An <code class="sq-mono">INNER JOIN</code> returns only the pairs that match in both tables, so an employee with no department disappears. A <code class="sq-mono">LEFT JOIN</code> keeps every row from the left table and fills the right side's columns with <code class="sq-mono">NULL</code> where nothing matches, which is exactly how you find &ldquo;employees without a department&rdquo;. A <em>self-join</em> joins a table to itself under two aliases, to compare rows within it. Since version 3.39.0 (2022), SQLite also supports <code class="sq-mono">RIGHT JOIN</code> and <code class="sq-mono">FULL OUTER JOIN</code>.</p>
+          <dl class="sq-terms">
+            <dt>Foreign key</dt><dd>A column holding the primary key of a row in another table, linking the two.</dd>
+            <dt>Normalisation</dt><dd>Designing tables so each fact is stored once, with relationships instead of copies.</dd>
+            <dt>INNER vs LEFT JOIN</dt><dd>Only matching pairs / every left-table row, with NULLs where nothing matches.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Setup: two related tables</span>
 <span class="kw">CREATE TABLE</span> departments (
   id   <span class="fn">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
@@ -857,13 +939,22 @@ CREATE TABLE users (
 | Carol | Alice     |
 +-------+-----------+</span></code></div>
         </div>
-        <div class="notice notice-info sq-mt12"><strong>INNER JOIN</strong> = only matched rows. <strong>LEFT JOIN</strong> = all left-table rows + matched right-table rows (NULLs where no match). SQLite does not support RIGHT JOIN or FULL OUTER JOIN directly.</div>
+        <div class="notice notice-info sq-mt12"><strong>INNER JOIN</strong> = only matched rows. <strong>LEFT JOIN</strong> = all left-table rows + matched right-table rows (NULLs where no match). SQLite 3.39.0 (2022) and later also support <strong>RIGHT JOIN</strong> and <strong>FULL OUTER JOIN</strong>; older versions don't.</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">Altering Tables</div></div>
       <div class="card-body">
+        <div class="sq-lesson">
+          <p>Applications change over time, and their tables have to change with them. Altering a live table's structure without losing its data is called a <strong>schema migration</strong>. <code class="sq-mono">ALTER TABLE</code> makes the most common changes in place: <code class="sq-mono">ADD COLUMN</code> appends a new column (existing rows get its default value, or <code class="sq-mono">NULL</code>), <code class="sq-mono">RENAME TO</code> renames the table, and <code class="sq-mono">RENAME COLUMN</code> renames a column. Since version 3.35.0 (2021), <code class="sq-mono">DROP COLUMN</code> removes one, as long as nothing such as an index or a foreign key depends on it.</p>
+          <p>SQLite's <code class="sq-mono">ALTER TABLE</code> is still deliberately smaller than those of server databases. It can't change a column's type or add a constraint to an existing column. For those changes, the standard technique is to <strong>rebuild the table</strong>: create a new table with the structure you want, copy the rows across with <code class="sq-mono">INSERT INTO &hellip; SELECT</code> or <code class="sq-mono">CREATE TABLE &hellip; AS SELECT</code>, drop the old table, and rename the new one into its place. Do it inside a transaction, so a failure halfway through can't leave you with half a table. In real projects, migrations are saved as numbered script files, so every copy of the database can be upgraded the same way, in the same order.</p>
+          <dl class="sq-terms">
+            <dt>Schema migration</dt><dd>A controlled change to a database's structure that keeps its existing data.</dd>
+            <dt>ALTER TABLE</dt><dd>Changes a table in place: add, rename, or drop a column, or rename the table.</dd>
+            <dt>Table rebuild</dt><dd>Create a new table, copy the rows over, drop the old one, and rename the new one.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Add a new column</span>
 <span class="kw">ALTER TABLE</span> users <span class="kw">ADD COLUMN</span> phone <span class="fn">TEXT</span>;
 
@@ -873,8 +964,11 @@ CREATE TABLE users (
 <span class="cm">-- Rename a column (SQLite 3.25.0+)</span>
 <span class="kw">ALTER TABLE</span> users <span class="kw">RENAME COLUMN</span> age <span class="kw">TO</span> birth_year;
 
-<span class="cm">-- SQLite can't DROP columns directly.</span>
-<span class="cm">-- Workaround: recreate the table without the column</span>
+<span class="cm">-- Drop a column (SQLite 3.35.0+)</span>
+<span class="kw">ALTER TABLE</span> users <span class="kw">DROP COLUMN</span> phone;
+
+<span class="cm">-- Older SQLite, or to change a column's type:</span>
+<span class="cm">-- recreate the table without the column</span>
 <span class="kw">CREATE TABLE</span> users_new <span class="kw">AS</span>
   <span class="kw">SELECT</span> id, name, email <span class="kw">FROM</span> users;  <span class="cm">-- omit 'age'</span>
 <span class="kw">DROP TABLE</span> users;
@@ -900,13 +994,22 @@ CREATE TABLE users (
 <span class="r-prompt">sqlite&gt;</span> .schema users
 <span class="r-table">CREATE TABLE users(id INTEGER, name TEXT, email TEXT);</span></code></div>
         </div>
-        <div class="notice notice-warning sq-mt12"><strong>SQLite limitation:</strong> ALTER TABLE is much more restricted than MySQL or PostgreSQL. You cannot drop columns, change column types, or add constraints to existing columns directly.</div>
+        <div class="notice notice-warning sq-mt12"><strong>SQLite limitation:</strong> ALTER TABLE is much more restricted than MySQL or PostgreSQL. You can add, rename, and (since 3.35.0) drop columns, but you cannot change a column's type or add constraints to existing columns directly &mdash; rebuild the table for those.</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header"><div class="card-title">Useful Built-in Functions</div></div>
       <div class="card-body">
+        <div class="sq-lesson">
+          <p>SQLite includes a library of <strong>scalar functions</strong>: functions that take one row's values and return one value, unlike aggregates, which summarise many rows. They can be used anywhere an expression is allowed: in the <code class="sq-mono">SELECT</code> list to reshape output, in <code class="sq-mono">WHERE</code> to filter, or in <code class="sq-mono">ORDER BY</code> to sort. The string functions clean and inspect text (<code class="sq-mono">TRIM</code>, <code class="sq-mono">UPPER</code>, <code class="sq-mono">SUBSTR</code>, <code class="sq-mono">REPLACE</code>, <code class="sq-mono">INSTR</code>), and the <code class="sq-mono">||</code> operator joins strings together, which is SQL's version of concatenation. Note that string positions in SQL start at <strong>1</strong>, not 0.</p>
+          <p>SQLite has no separate date type. Dates are normally stored as <strong>ISO-8601 text</strong> such as <code class="sq-mono">'2025-05-02 14:30:00'</code>. That format sorts correctly as plain text, and the date functions (<code class="sq-mono">DATE</code>, <code class="sq-mono">DATETIME</code>, <code class="sq-mono">STRFTIME</code>) read and produce it. Remember too that <code class="sq-mono">NULL</code> is contagious: almost any calculation involving <code class="sq-mono">NULL</code> produces <code class="sq-mono">NULL</code>, so <code class="sq-mono">'Mr ' || NULL</code> is NULL, not <code class="sq-mono">'Mr '</code>. <code class="sq-mono">COALESCE(a, b, &hellip;)</code> returns its first non-NULL argument, the standard way to substitute a default. <code class="sq-mono">IFNULL</code> is the two-argument version.</p>
+          <dl class="sq-terms">
+            <dt>Scalar function</dt><dd>Takes values from one row and returns one value, e.g. UPPER or ROUND.</dd>
+            <dt>Concatenation</dt><dd>Joining strings; SQL uses the || operator.</dd>
+            <dt>COALESCE</dt><dd>Returns its first non-NULL argument; the usual way to supply a default for NULL.</dd>
+          </dl>
+        </div>
         <div class="two-col sq-m0">
           <div>
             <p class="sq-subhead">Text functions</p>
@@ -992,6 +1095,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">Indexes — Speed Up Queries</div></div>
       <div class="card-body">
         <p class="sq-lede">An index lets SQLite find rows without scanning every row. Create them on columns you frequently filter or sort on.</p>
+        <div class="sq-lesson">
+          <p>Without help, answering <code class="sq-mono">WHERE email = 'g@x.com'</code> means reading every row in the table and checking it. That is a <strong>full table scan</strong>, and it grows slower as the table grows. An <strong>index</strong> is a separate, sorted copy of one or more columns, each entry pointing back to its row. SQLite stores indexes as <strong>B-trees</strong>, balanced search trees that find any value in a handful of steps even among millions of rows, the way a book's index takes you straight to a page instead of making you read every chapter. An index also speeds up <code class="sq-mono">ORDER BY</code> on its columns, and a <code class="sq-mono">UNIQUE</code> index doubles as a constraint.</p>
+          <p>Indexes aren't free, which is why databases don't index everything automatically. Each one takes disk space, and every <code class="sq-mono">INSERT</code>, <code class="sq-mono">UPDATE</code>, and <code class="sq-mono">DELETE</code> must also update every index on the table, which slows writes. So index the columns you actually search, join, or sort on, especially ones with many distinct values. A <strong>composite index</strong> on <code class="sq-mono">(user_id, created_at)</code> follows the <em>leftmost-prefix rule</em>: it helps queries filtering on <code class="sq-mono">user_id</code>, or on <code class="sq-mono">user_id</code> and <code class="sq-mono">created_at</code> together, but not on <code class="sq-mono">created_at</code> alone, just as a phone book sorted by surname then first name can't find everyone called &ldquo;Ann&rdquo;. <code class="sq-mono">EXPLAIN QUERY PLAN</code> shows what SQLite will do: <code class="sq-mono">SCAN</code> means it reads every row, while <code class="sq-mono">SEARCH &hellip; USING INDEX</code> means your index is working.</p>
+          <dl class="sq-terms">
+            <dt>Index</dt><dd>A sorted lookup structure (a B-tree) that finds rows without scanning the whole table.</dd>
+            <dt>Full table scan</dt><dd>Reading every row to answer a query; what an index avoids.</dd>
+            <dt>Query plan</dt><dd>The database's chosen strategy for running a query, shown by EXPLAIN QUERY PLAN.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Create a basic index</span>
 <span class="kw">CREATE INDEX</span> idx_users_name <span class="kw">ON</span> users (name);
 
@@ -1046,6 +1158,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">Views — Saved Queries</div></div>
       <div class="card-body">
         <p class="sq-lede">A view is a named query stored in the database. It looks and acts like a table but doesn't store data itself — it re-runs the query each time you access it.</p>
+        <div class="sq-lesson">
+          <p>A <strong>view</strong> is a <code class="sq-mono">SELECT</code> statement stored in the database under a name. Once created, you query it exactly like a table, but it holds no data of its own: every time you read from it, SQLite runs the underlying query against the current data, so a view is never out of date. That's why views are sometimes called <em>virtual tables</em>. Their definitions live alongside tables in <code class="sq-mono">sqlite_master</code>, SQLite's built-in catalogue of everything in the database.</p>
+          <p>Views are a tool for <strong>abstraction</strong>. They let you write a complicated query once, with its joins, filters, and calculated columns, and give it a meaningful name such as <code class="sq-mono">active_users</code>. Everyone who uses the view gets the same definition of &ldquo;active&rdquo;, and the rest of your SQL gets simpler. If the underlying tables are reorganised later, you can often update just the view and leave every query that uses it untouched. In SQLite, views are <strong>read-only</strong>: you can't <code class="sq-mono">INSERT</code> or <code class="sq-mono">UPDATE</code> through them directly, unless you define <code class="sq-mono">INSTEAD OF</code> triggers that say what such a write should do.</p>
+          <dl class="sq-terms">
+            <dt>View</dt><dd>A named, stored SELECT that behaves like a read-only table.</dd>
+            <dt>Abstraction</dt><dd>Hiding a complex query behind a simple, well-named interface.</dd>
+            <dt>sqlite_master</dt><dd>SQLite's internal table listing every table, index, view, and trigger.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Create a view</span>
 <span class="kw">CREATE VIEW</span> active_users <span class="kw">AS</span>
   <span class="kw">SELECT</span> id, name, email
@@ -1098,6 +1219,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">Subqueries</div></div>
       <div class="card-body">
         <p class="sq-lede">A subquery is a SELECT nested inside another SQL statement. It can appear in WHERE, FROM, or SELECT clauses.</p>
+        <div class="sq-lesson">
+          <p>A <strong>subquery</strong> is a complete <code class="sq-mono">SELECT</code> placed inside another statement, in parentheses. Its result is used by the outer query, so a question that needs two steps can be answered in one statement. Subqueries come in shapes that match where they appear. A <strong>scalar subquery</strong> returns a single value and can go anywhere one value is expected, such as comparing each user's age to <code class="sq-mono">(SELECT AVG(age) FROM users)</code>. A subquery that returns a column of values feeds <code class="sq-mono">IN</code>. A subquery in the <code class="sq-mono">FROM</code> clause acts as a temporary table, called a <em>derived table</em>, that the outer query can filter and join like any other.</p>
+          <p>A <strong>correlated subquery</strong> refers to columns of the outer query, as in <code class="sq-mono">WHERE o.user_id = u.id</code> inside an <code class="sq-mono">EXISTS</code>. Conceptually it is re-evaluated for each row of the outer query, asking &ldquo;does <em>this</em> user have any orders?&rdquo;. <code class="sq-mono">EXISTS</code> is true as soon as one matching row is found, which is why the inner query just selects <code class="sq-mono">1</code>: the value itself is never looked at. Many subqueries can also be written as joins, and SQLite often optimises both forms into the same plan. Choose whichever states the question most clearly, and when nesting gets deep, move to CTEs (two steps on).</p>
+          <dl class="sq-terms">
+            <dt>Subquery</dt><dd>A SELECT nested inside another SQL statement.</dd>
+            <dt>Scalar subquery</dt><dd>A subquery that returns exactly one value.</dd>
+            <dt>Correlated subquery</dt><dd>A subquery that refers to the outer query's current row.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- WHERE subquery — find users older than average</span>
 <span class="kw">SELECT</span> name, age <span class="kw">FROM</span> users
 <span class="kw">WHERE</span> age > (<span class="kw">SELECT</span> <span class="fn">AVG</span>(age) <span class="kw">FROM</span> users);
@@ -1160,6 +1290,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">Transactions</div></div>
       <div class="card-body">
         <p class="sq-lede">A transaction groups multiple statements into a single all-or-nothing operation. If anything fails, you roll back and nothing is saved.</p>
+        <div class="sq-lesson">
+          <p>A <strong>transaction</strong> groups several statements into one indivisible unit of work. Placing an order might need to insert the order <em>and</em> reduce the stock count. If the program crashed between those two steps, the data would be inconsistent: an order with no matching stock change. Inside a transaction, either every statement takes effect (<code class="sq-mono">COMMIT</code>) or none of them do (<code class="sq-mono">ROLLBACK</code>). Databases promise four properties, known as <strong>ACID</strong>. Transactions are <em>Atomic</em> (all or nothing) and leave the data <em>Consistent</em> (every rule still holds). They are <em>Isolated</em> (others never see a half-finished transaction) and <em>Durable</em> (once committed, changes survive a crash or power cut).</p>
+          <p>By default SQLite runs in <strong>autocommit</strong> mode: every statement is its own tiny transaction, committed the moment it finishes. <code class="sq-mono">BEGIN</code> switches that off until the next <code class="sq-mono">COMMIT</code> or <code class="sq-mono">ROLLBACK</code>. This also explains the dramatic speed-up for bulk inserts: to guarantee durability, each commit waits for the data to be physically written to disk, so a thousand autocommitted inserts means a thousand waits, while one transaction means one. <code class="sq-mono">SAVEPOINT</code> adds named checkpoints inside a transaction, so <code class="sq-mono">ROLLBACK TO</code> can undo part of the work without abandoning all of it.</p>
+          <dl class="sq-terms">
+            <dt>Transaction</dt><dd>A group of statements that succeed or fail together.</dd>
+            <dt>ACID</dt><dd>Atomicity, Consistency, Isolation, Durability: the guarantees transactions provide.</dd>
+            <dt>Autocommit</dt><dd>SQLite's default: each statement is committed on its own immediately.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Wrap multiple operations in a transaction</span>
 <span class="kw">BEGIN TRANSACTION</span>;
 
@@ -1223,6 +1362,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">CTEs — Common Table Expressions</div></div>
       <div class="card-body">
         <p class="sq-lede">A CTE (WITH clause) creates a temporary named result set you can reference in the same query. They make complex queries readable and can be recursive.</p>
+        <div class="sq-lesson">
+          <p>A <strong>common table expression</strong> (CTE) uses the <code class="sq-mono">WITH</code> keyword to give a subquery a name at the <em>start</em> of a statement. The main query then refers to it like a table. The result is the same as nesting a subquery, but the query reads top to bottom as a series of named steps: first work out <em>high spenders</em>, then join them to users. You can define several CTEs, separated by commas, and each can build on the ones before it. A CTE exists only for the single statement it belongs to; unlike a view, nothing is stored.</p>
+          <p><code class="sq-mono">WITH RECURSIVE</code> lets a CTE refer to <em>itself</em>, which solves problems plain SQL can't, such as walking an organisation chart or a folder tree of unknown depth. A recursive CTE has two parts joined by <code class="sq-mono">UNION ALL</code>. The <strong>anchor</strong> selects the starting rows (the boss, who has no manager), and the <strong>recursive member</strong> finds the next level by joining the table to the rows found so far. SQLite repeats the recursive member until it produces no new rows. That also means you must guarantee it eventually stops: a loop in the data, or a missing stopping condition, runs forever. The chained example also uses <code class="sq-mono">RANK() OVER (&hellip;)</code>, a window function, which is covered in the last step.</p>
+          <dl class="sq-terms">
+            <dt>CTE</dt><dd>A named temporary result set, defined with WITH, that lasts for one statement.</dd>
+            <dt>Recursive CTE</dt><dd>A CTE that references itself, repeating until no new rows appear.</dd>
+            <dt>Anchor / recursive member</dt><dd>The starting rows / the step that finds the next level from the previous one.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Basic CTE — name a subquery for readability</span>
 <span class="kw">WITH</span> high_spenders <span class="kw">AS</span> (
   <span class="kw">SELECT</span> user_id, <span class="fn">SUM</span>(total) <span class="kw">AS</span> lifetime
@@ -1306,6 +1454,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">Triggers</div></div>
       <div class="card-body">
         <p class="sq-lede">A trigger is SQL that runs automatically when a specific event (INSERT, UPDATE, DELETE) happens on a table.</p>
+        <div class="sq-lesson">
+          <p>A <strong>trigger</strong> is a block of SQL stored in the database that runs automatically whenever a particular <strong>event</strong> (an <code class="sq-mono">INSERT</code>, <code class="sq-mono">UPDATE</code>, or <code class="sq-mono">DELETE</code>) happens on a particular table. Nobody has to remember to call it. That makes triggers ideal for rules that must <em>always</em> hold, no matter which program or person changes the data: stamping an <code class="sq-mono">updated_at</code> time, writing an audit log, or keeping a summary table in step. <code class="sq-mono">BEFORE</code> triggers run before the change is applied, <code class="sq-mono">AFTER</code> triggers run once it's done, and <code class="sq-mono">INSTEAD OF</code> triggers (on views) replace the change entirely.</p>
+          <p>SQLite triggers are <strong>row-level</strong>: <code class="sq-mono">FOR EACH ROW</code> means the body runs once for every row the statement affects. Inside the body, <code class="sq-mono">NEW.column</code> is the row's value after the change (for INSERT and UPDATE), and <code class="sq-mono">OLD.column</code> is its value before (for UPDATE and DELETE). An optional <code class="sq-mono">WHEN</code> condition restricts when the trigger fires. You might expect <code class="sq-mono">set_updated_at</code> to fire itself forever, since it updates the same table. It doesn't, because SQLite leaves <code class="sq-mono">recursive_triggers</code> off by default. Use triggers thoughtfully: they are invisible in the statements that set them off, so behaviour can surprise someone who doesn't know they exist.</p>
+          <dl class="sq-terms">
+            <dt>Trigger</dt><dd>SQL that runs automatically on an INSERT, UPDATE, or DELETE.</dd>
+            <dt>NEW / OLD</dt><dd>The row's values after / before the change, available inside a trigger.</dd>
+            <dt>Row-level trigger</dt><dd>Runs once per affected row; SQLite's only kind (FOR EACH ROW).</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Auto-set updated_at timestamp on row change</span>
 <span class="kw">CREATE TRIGGER</span> set_updated_at
 <span class="kw">AFTER UPDATE ON</span> users
@@ -1370,6 +1527,15 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">PRAGMA — Database Settings &amp; Info</div></div>
       <div class="card-body">
         <p class="sq-lede">PRAGMAs are special commands that control SQLite's internal settings and expose metadata.</p>
+        <div class="sq-lesson">
+          <p><code class="sq-mono">PRAGMA</code> statements are SQLite's own control panel. They aren't part of standard SQL, and other databases configure these things differently. Some PRAGMAs <em>report</em> information, such as <code class="sq-mono">table_info</code> (a table's columns and types), <code class="sq-mono">index_list</code>, and <code class="sq-mono">integrity_check</code> (verify the file isn't corrupted). Others <em>change</em> how SQLite behaves. The crucial distinction is scope. Some settings are stored in the database file and persist: <code class="sq-mono">journal_mode = WAL</code> stays on once set. Others apply only to the current <strong>connection</strong> and are forgotten when it closes.</p>
+          <p><code class="sq-mono">foreign_keys</code> is the most important per-connection setting. SQLite ships with foreign-key enforcement <strong>off</strong> for backward compatibility, so <code class="sq-mono">REFERENCES</code> clauses are silently ignored until every new connection runs <code class="sq-mono">PRAGMA foreign_keys = ON</code>. Applications typically do this right after connecting. <strong>WAL</strong> (write-ahead logging) mode records changes in a separate log file first, which lets readers keep reading while one writer writes. <code class="sq-mono">VACUUM</code> rebuilds the database file to reclaim space left behind by deleted data; while it runs it can need free disk space of up to twice the database's size, and it locks the database.</p>
+          <dl class="sq-terms">
+            <dt>PRAGMA</dt><dd>A SQLite-specific statement that reads or changes internal settings.</dd>
+            <dt>Connection</dt><dd>One open session to a database file; per-connection settings reset when it closes.</dd>
+            <dt>WAL mode</dt><dd>Write-ahead logging, which lets readers and one writer work at the same time.</dd>
+          </dl>
+        </div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Enforce foreign key constraints (OFF by default!)</span>
 <span class="kw">PRAGMA</span> foreign_keys = ON;
 
@@ -1439,6 +1605,15 @@ CREATE TABLE users (
     <div class="card">
       <div class="card-header"><div class="card-title">UPSERT, Window Functions &amp; JSON</div></div>
       <div class="card-body">
+        <div class="sq-lesson">
+          <p>An <strong>UPSERT</strong> (&ldquo;update or insert&rdquo;) solves a very common need: add this row, but if one with the same key already exists, update it instead. <code class="sq-mono">ON CONFLICT(id) DO UPDATE</code> does exactly that in one atomic statement, and inside it <code class="sq-mono">excluded.column</code> refers to the value you tried to insert. The older <code class="sq-mono">INSERT OR REPLACE</code> looks similar but works differently: it <em>deletes</em> the old row and inserts a brand-new one. Any column you didn't mention resets to its default, and delete triggers fire. Prefer the true UPSERT when a row has other data worth keeping.</p>
+          <p><strong>Window functions</strong> calculate across a set of related rows, the &ldquo;window&rdquo;, <em>without</em> collapsing them the way <code class="sq-mono">GROUP BY</code> does, so every row stays in the result with the calculation beside it. <code class="sq-mono">OVER (ORDER BY &hellip;)</code> defines the window. <code class="sq-mono">ROW_NUMBER</code> and <code class="sq-mono">RANK</code> number the rows, <code class="sq-mono">SUM(&hellip;) OVER</code> produces running totals, and <code class="sq-mono">LAG</code>/<code class="sq-mono">LEAD</code> look at the previous or next row. Adding <code class="sq-mono">PARTITION BY</code> restarts the calculation for each group. SQLite also has built-in <strong>JSON</strong> support, part of the core since 3.38. JSON documents are stored as text, <code class="sq-mono">json_extract</code> pulls values out by a path such as <code class="sq-mono">'$.color'</code>, and the shorthand operators <code class="sq-mono">-&gt;</code> and <code class="sq-mono">-&gt;&gt;</code> do the same. This gives you flexible, schema-free attributes inside an otherwise structured table.</p>
+          <dl class="sq-terms">
+            <dt>UPSERT</dt><dd>Insert a row, or update the existing one if its key already exists.</dd>
+            <dt>Window function</dt><dd>A calculation across related rows that keeps every row, defined with OVER (&hellip;).</dd>
+            <dt>json_extract</dt><dd>Reads a value out of JSON text using a path such as '$.color'.</dd>
+          </dl>
+        </div>
         <div class="section-heading sq-mt0">UPSERT (INSERT OR REPLACE)</div>
         <div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Insert or update if the key already exists (SQLite 3.24+)</span>
 <span class="kw">INSERT INTO</span> users (id, name, age)

@@ -23,7 +23,7 @@
      location /examples/sqlite3/sqlite3-guide/) and is NOT rendered by
      Django, so no Django template syntax may appear anywhere in it. -->
 <link rel="stylesheet" href="/static/css/fonts.css?v=2">
-<link rel="stylesheet" href="sqlite3-tutorial.css?v=8">
+<link rel="stylesheet" href="sqlite3-tutorial.css?v=9">
 <link rel="stylesheet" href="/static/css/back-button.css?v=1">
 </head>
 <body>
@@ -1099,7 +1099,7 @@ CREATE TABLE users (
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="basics-indexes">
       <div class="card-header"><div class="card-title">Indexes — Speed Up Queries</div></div>
       <div class="card-body">
         <p class="sq-lede">An index lets SQLite find rows without scanning every row. Create them on columns you frequently filter or sort on.</p>
@@ -1294,7 +1294,7 @@ CREATE TABLE users (
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="basics-transactions">
       <div class="card-header"><div class="card-title">Transactions</div></div>
       <div class="card-body">
         <p class="sq-lede">A transaction groups multiple statements into a single all-or-nothing operation. If anything fails, you roll back and nothing is saved.</p>
@@ -1366,7 +1366,7 @@ CREATE TABLE users (
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="basics-ctes">
       <div class="card-header"><div class="card-title">CTEs — Common Table Expressions</div></div>
       <div class="card-body">
         <p class="sq-lede">A CTE (WITH clause) creates a temporary named result set you can reference in the same query. They make complex queries readable and can be recursive.</p>
@@ -1531,7 +1531,7 @@ CREATE TABLE users (
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="basics-pragma">
       <div class="card-header"><div class="card-title">PRAGMA — Database Settings &amp; Info</div></div>
       <div class="card-body">
         <p class="sq-lede">PRAGMAs are special commands that control SQLite's internal settings and expose metadata.</p>
@@ -1878,11 +1878,11 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">3 · Isolation, Snapshots and the Lock-Upgrade Trap</div></div>
       <div class="card-body">
         <div class="sq-lesson">
-          <p>In <strong>WAL mode</strong> (<code class="sq-mono">PRAGMA journal_mode = WAL</code>), changes are appended to a separate <code class="sq-mono">-wal</code> file instead of being written into the database, so readers and a writer no longer block each other. Each read transaction sees a fixed <strong>snapshot</strong>: whatever had been committed when it first read. In the session below, B keeps seeing Alice's balance as 100 even after A has committed 70. That is what makes SQLite's transactions <strong>serializable</strong>, the strictest isolation level in the SQL standard.</p>
+          <p class="ms-builds">Builds on <a href="#basics-pragma" class="ms-goto" data-goto="basics-pragma">Basics &amp; Commands &rsaquo; PRAGMA (WAL mode)</a></p>
+          <p>WAL lets readers and a writer work at the same time by giving each read transaction a fixed <strong>snapshot</strong>: whatever had been committed when it first read. In the session below, B keeps seeing Alice's balance as 100 even after A has committed 70. That is what makes SQLite's transactions <strong>serializable</strong>, the strictest isolation level in the SQL standard.</p>
           <p>Now B tries to write. Its snapshot is out of date, and if the update were allowed B would compute 100&nbsp;&minus;&nbsp;30 and overwrite A's change. That is a <strong>lost update</strong>. SQLite refuses. Note the timing: B had a 5-second busy timeout, yet the error came back in 0.000&nbsp;s. Waiting cannot help, because the snapshot will never become current, so SQLite skips the busy handler and returns at once (the extended code, <code class="sq-mono">SQLITE_BUSY_SNAPSHOT</code>, is 517). The only way forward is to roll back and start again.</p>
           <p>Rollback-journal mode has the same trap in a different form. A transaction that reads first holds SHARED and then asks to upgrade to RESERVED. If another connection holding RESERVED is waiting to commit, both would wait for each other forever, so SQLite returns SQLITE_BUSY to the upgrader without waiting. This is exactly what Django's <code class="sq-mono">update_or_create</code> does: a SELECT, then a write, inside one transaction. On this site it caused 81 &ldquo;database is locked&rdquo; errors even though a generous busy timeout was set. The fix is to say up front that you will write. <code class="sq-mono">BEGIN IMMEDIATE</code> takes the write lock before the first read, so a conflict turns into an ordinary wait. Or write in one statement, such as an <code class="sq-mono">INSERT &hellip; ON CONFLICT DO UPDATE</code>. Its transaction starts as a write instead of upgrading from a read, so SQLite can safely let it wait and retry.</p>
           <dl class="sq-terms">
-            <dt>WAL (write-ahead log)</dt><dd>A journal mode where commits append to a -wal file, letting readers and one writer run at the same time.</dd>
             <dt>Snapshot</dt><dd>The fixed view of committed data a read transaction sees from its first read until it ends.</dd>
             <dt>Lost update</dt><dd>Two transactions read the same value, and one overwrites the other's change with a result based on stale data.</dd>
             <dt>BEGIN IMMEDIATE</dt><dd>Starts a transaction and takes the write lock at once, before any reads.</dd>
@@ -1976,7 +1976,8 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">4 · The Query Planner and Cost-Based Optimisation</div></div>
       <div class="card-body">
         <div class="sq-lesson">
-          <p>SQL says <em>what</em> you want. The <strong>query planner</strong> decides <em>how</em> to get it, and <code class="sq-mono">EXPLAIN QUERY PLAN</code> shows its choice. <code class="sq-mono">SCAN</code> means reading every row. <code class="sq-mono">SEARCH &hellip; USING INDEX</code> means descending an index B-tree to the matching entries and then fetching each row from the table by rowid. <code class="sq-mono">USING COVERING INDEX</code> means the index alone holds every column the query needs, so the table is never touched. <code class="sq-mono">USE TEMP B-TREE FOR ORDER BY</code> means the results are sorted after the fact, because no index delivers them in order.</p>
+          <p class="ms-builds">Builds on <a href="#basics-indexes" class="ms-goto" data-goto="basics-indexes">Basics &amp; Commands &rsaquo; Indexes</a></p>
+          <p>Beyond <code class="sq-mono">SCAN</code> and <code class="sq-mono">SEARCH</code>, two more plan lines matter. With a plain index, SQLite descends the index B-tree to each match and then makes a second lookup in the table, by rowid, to fetch the row. <code class="sq-mono">USING COVERING INDEX</code> means the index alone holds every column the query needs, so the table is never touched. <code class="sq-mono">USE TEMP B-TREE FOR ORDER BY</code> means the results are sorted after the fact, because no index delivers them in order.</p>
           <p>On the 200,000-row table below, adding an index turns a 15&nbsp;ms scan into a lookup too fast for the shell's timer to register. The time saved grows with the size of the table: a scan costs work in proportion to the number of rows, while an index lookup costs only a few page reads for each match.</p>
           <p>When several plans are possible, SQLite estimates the cost of each and picks the cheapest. Since version 3.8.0 its planner (the &ldquo;next-generation query planner&rdquo;) has kept only the few cheapest partial join orders at each step (its &ldquo;N nearest neighbours&rdquo; search) rather than trying every possible order. The estimates depend on statistics: <code class="sq-mono">ANALYZE</code> samples each index and writes a summary to <code class="sq-mono">sqlite_stat1</code>. The line <code class="sq-mono">200000 40 1</code> means the index covers 200,000 rows, each <code class="sq-mono">customer_id</code> matches about 40 of them, and each (<code class="sq-mono">customer_id</code>, <code class="sq-mono">total</code>) pair matches about 1. Stale or missing statistics are a common cause of a sudden bad plan in production.</p>
           <dl class="sq-terms">
@@ -2058,7 +2059,8 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">5 · Recursive Queries, Graphs and Fixed Points</div></div>
       <div class="card-body">
         <div class="sq-lesson">
-          <p>A <code class="sq-mono">WITH RECURSIVE</code> query has two parts joined by <code class="sq-mono">UNION</code> or <code class="sq-mono">UNION ALL</code>. The first part seeds a queue, and the second part runs once for each row taken off the queue, adding any new rows it produces. The query ends when the queue is empty. Because each row goes through the recursive step exactly once, this is the same idea as <strong>semi-naive evaluation</strong> in Datalog. It lets plain SQL compute a <strong>transitive closure</strong>: everything reachable from a starting point in a graph.</p>
+          <p class="ms-builds">Builds on <a href="#basics-ctes" class="ms-goto" data-goto="basics-ctes">Basics &amp; Commands &rsaquo; CTEs</a></p>
+          <p>Underneath, SQLite runs a recursive CTE with a queue. The anchor seeds the queue, and the recursive step runs once for each row taken off it, adding any new rows it produces. The query ends when the queue is empty. Because each row goes through the recursive step exactly once, this is the same idea as <strong>semi-naive evaluation</strong> in Datalog. It lets plain SQL compute a <strong>transitive closure</strong>: everything reachable from a starting point in a graph.</p>
           <p>Graphs can have cycles. The route table below includes DSM&nbsp;&rarr;&nbsp;ORD&nbsp;&rarr;&nbsp;DEN&nbsp;&rarr;&nbsp;DSM, so with <code class="sq-mono">UNION ALL</code> the queue never empties and the query only stops because of <code class="sq-mono">LIMIT</code>. Switching to <code class="sq-mono">UNION</code> discards any row that has already been produced, so the loop reaches a <strong>fixed point</strong> (no new rows) and ends by itself. This works because the graph is finite.</p>
           <p>To list the paths themselves, rather than just the cities reached, carry the path along as a column and refuse to revisit a city already on it. <code class="sq-mono">instr</code> is enough here because every airport code is exactly three letters. With labels of different lengths you would add separators so that one label can't match inside another. Rows come off SQLite's queue first in, first out, so the recursion runs breadth-first: in the first query every city one hop away appears before any city two hops away.</p>
           <dl class="sq-terms">
@@ -2163,11 +2165,11 @@ CREATE TABLE users (
       <div class="card-header"><div class="card-title">6 · Durability and the Cost of fsync</div></div>
       <div class="card-body">
         <div class="sq-lesson">
-          <p>A commit is <strong>durable</strong> once the data is on the disk itself, not just in the operating system's memory. To make sure, SQLite calls <code class="sq-mono">fsync</code>, which waits for the disk to confirm the write, and that wait is by far the most expensive part of a commit. The benchmark below timed 1,000 single-row inserts on this site's server under four settings. In every case the CPU time was under a second. The rest of the time was spent waiting for the disk.</p>
+          <p class="ms-builds">Builds on <a href="#basics-transactions" class="ms-goto" data-goto="basics-transactions">Basics &amp; Commands &rsaquo; Transactions</a></p>
+          <p>This lesson measures the wait behind every commit. For a commit to be durable, the data must be on the disk itself, not just in the operating system's memory. To make sure, SQLite calls <code class="sq-mono">fsync</code>, which waits for the disk to confirm the write, and that wait is by far the most expensive part of a commit. The benchmark below timed 1,000 single-row inserts on this site's server under four settings. In every case the CPU time was under a second. The rest of the time was spent waiting for the disk.</p>
           <p><strong>A</strong> is SQLite's default: a rollback journal with <code class="sq-mono">synchronous = FULL</code> and one commit per insert. Each commit writes and flushes the journal, updates the database, flushes it again and deletes the journal, which comes to about 4.2&nbsp;ms, or roughly 240 commits a second. <strong>B</strong> runs the same inserts in one transaction and is about 350 times faster, because it pays the disk cost once. <strong>C</strong> uses WAL, where a commit appends to the log and flushes once, which roughly halves the cost. <strong>D</strong> is WAL with <code class="sq-mono">synchronous = NORMAL</code>, where a commit doesn't wait for the disk at all and flushes happen only at checkpoints.</p>
-          <p>D is not free. The database cannot be corrupted, but after a power cut or operating-system crash the last few commits can be missing. Your application was told they succeeded, and they are gone. Whether that is acceptable depends on the application, and it is the classic trade between durability and throughput that every database makes somewhere. The same lesson explains why batching writes into one transaction is the most important performance habit in SQLite.</p>
+          <p>D is not free. The database cannot be corrupted, but after a power cut or operating-system crash the last few commits can be missing. Your application was told they succeeded, and they are gone. Whether that is acceptable depends on the application, and it is the classic trade between durability and throughput that every database makes somewhere.</p>
           <dl class="sq-terms">
-            <dt>Durability</dt><dd>The D in ACID: once a commit returns, the data survives a crash or power loss.</dd>
             <dt>fsync</dt><dd>An operating-system call that returns only when the disk confirms the data has been written.</dd>
             <dt>synchronous</dt><dd>The PRAGMA controlling how often SQLite calls fsync: OFF, NORMAL, FULL or EXTRA.</dd>
             <dt>Checkpoint</dt><dd>In WAL mode, copying the log's pages back into the main database file.</dd>
@@ -2432,6 +2434,6 @@ d.db: 1000</code></div>
 
 </div><!-- /wp-main -->
 
-<script src="sqlite3-tutorial.js?v=4"></script>
+<script src="sqlite3-tutorial.js?v=5"></script>
 </body>
 </html>

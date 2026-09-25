@@ -358,3 +358,6 @@
 .ms-reading { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; color: var(--text); }
 .ms-reading a { color: var(--wp-blue); }
 @media (max-width: 720px) { .ms-projects { grid-template-columns: 1fr; } }
+.sq-lesson p.ms-builds { font-size: 12.5px; color: var(--text-muted); margin: 0 0 8px; }
+.ms-builds a { color: var(--wp-blue); font-weight: 600; text-decoration: none; }
+.ms-builds a:hover { text-decoration: underline; }

@@ -237,6 +237,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Copy buttons
     if (e.target.classList.contains('copy-btn')) { copyCode(e.target); return; }
 
+    // "Builds on Basics" links in the Master's tab: switch tab, then scroll to the card
+    const go = e.target.closest('.ms-goto[data-goto]');
+    if (go) {
+      e.preventDefault();
+      switchTab('basics');
+      const card = document.getElementById(go.dataset.goto);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
     // Quiz option buttons
     const opt = e.target.closest('.option-btn[data-qi]');
     if (opt) { selectAnswer(parseInt(opt.dataset.qi), parseInt(opt.dataset.oi)); return; }

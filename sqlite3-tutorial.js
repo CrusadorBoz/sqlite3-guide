@@ -175,9 +175,8 @@ function switchTab(tab, sidebarItem, tabBtn) {
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('tab-btn-' + tab).classList.add('active');
 
-  const sidebarItems = document.querySelectorAll('.sidebar-item');
-  const map = { install: 0, basics: 1, quiz: 2 };
-  if (sidebarItems[map[tab]]) sidebarItems[map[tab]].classList.add('active');
+  const activeItem = document.querySelector('.sidebar-item[data-tab="' + tab + '"]');
+  if (activeItem) activeItem.classList.add('active');
 }
 
 function switchOS(val) {

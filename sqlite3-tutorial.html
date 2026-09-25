@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SQLite3 — Complete Guide</title>
 <link rel="canonical" href="https://bozcode.com/examples/sqlite3/sqlite3-guide/sqlite3-tutorial.html">
-<meta name="description" content="A complete SQLite3 tutorial — installation, core commands, schema design, queries, and a knowledge quiz. Hands-on guide with a downloadable practice database.">
+<meta name="description" content="A complete SQLite3 tutorial — installation, core commands, schema design, queries, Master's-level internals (locking, isolation, query planning, durability, bitemporal data), and a knowledge quiz. Hands-on guide with a downloadable practice database.">
 <meta property="og:site_name" content="BozCode.com">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://bozcode.com/examples/sqlite3/sqlite3-guide/sqlite3-tutorial.html">
 <meta property="og:title" content="SQLite3 — Complete Guide">
-<meta property="og:description" content="A complete SQLite3 tutorial — installation, core commands, schema design, queries, and a knowledge quiz. Hands-on guide with a downloadable practice database.">
+<meta property="og:description" content="A complete SQLite3 tutorial — installation, core commands, schema design, queries, Master's-level internals (locking, isolation, query planning, durability, bitemporal data), and a knowledge quiz. Hands-on guide with a downloadable practice database.">
 <meta property="og:image" content="https://bozcode.com/static/images/og-default.png?v=1">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -23,7 +23,7 @@
      location /examples/sqlite3/sqlite3-guide/) and is NOT rendered by
      Django, so no Django template syntax may appear anywhere in it. -->
 <link rel="stylesheet" href="/static/css/fonts.css?v=2">
-<link rel="stylesheet" href="sqlite3-tutorial.css?v=7">
+<link rel="stylesheet" href="sqlite3-tutorial.css?v=8">
 <link rel="stylesheet" href="/static/css/back-button.css?v=1">
 </head>
 <body>
@@ -52,6 +52,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Basics & Commands
     </div>
+    <div class="sidebar-item" data-tab="masters">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+      Master's Degree
+    </div>
     <div class="sidebar-item" data-tab="quiz">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       Knowledge Quiz
@@ -76,7 +80,7 @@
   <div class="page-header">
     <div>
       <div class="page-title">SQLite3 <span>Complete Guide</span></div>
-      <div class="page-subtitle">Installation, core commands, and a quiz to test your knowledge</div>
+      <div class="page-subtitle">Installation, core commands, Master's-level internals, and a quiz to test your knowledge</div>
     </div>
   </div>
 
@@ -89,6 +93,10 @@
     <button class="tab-btn" id="tab-btn-basics">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Basics &amp; Commands
+    </button>
+    <button class="tab-btn" id="tab-btn-masters">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+      Master's Degree
     </button>
     <button class="tab-btn" id="tab-btn-quiz">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -1703,6 +1711,686 @@ CREATE TABLE users (
 
   </div><!-- /tab-basics -->
 
+  <!-- ══════════════════ MASTER'S DEGREE TAB ══════════════════ -->
+  <div class="tab-content" id="tab-masters">
+
+    <div class="level-banner level-masters-banner">
+      <span class="level-icon">🎓</span>
+      <div>
+        <div class="sq-h">Master's Degree</div>
+        <div class="sq-tiny">How SQLite works inside: storage, locking, isolation, planning, recursion, durability and time</div>
+      </div>
+    </div>
+
+    <div class="notice notice-info">Graduate-level material. Each lesson explains one part of how a database works inside and then shows it happening. Every Terminal Output block is real, captured from sqlite3 3.45.1 on this site's server. Where a lesson uses two terminal windows at once, <strong>[A]</strong> and <strong>[B]</strong> mark which window each line was typed in.</div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">1 · Pages, B-trees and the File Format</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p>Everything in an SQLite database lives in fixed-size <strong>pages</strong>, 4,096 bytes by default. Page 1 starts with a 100-byte header; after that, every table and every index is its own <strong>B-tree</strong> made of pages. <code class="sq-mono">dbstat</code> is a built-in virtual table that shows those pages directly, so the storage layout stops being theory and becomes something you can query.</p>
+          <p>Tables and indexes use two different kinds of tree. A table is a <strong>B+tree</strong> keyed by rowid: the rows live only in the leaves, and interior pages hold nothing but copies of keys that point downward. An index is a plain <strong>B-tree</strong>: each entry is stored exactly once, in whichever page it lands in, interior or leaf. The output below shows the difference. <code class="sq-mono">people</code> reports 10,090 cells for 10,000 rows, because its one interior page holds 90 extra routing keys. <code class="sq-mono">idx_people_email</code> reports exactly 10,000 cells, because its interior entries <em>are</em> index entries.</p>
+          <p>The numbers also show why B-trees scale. The root's 90 cells point to 91 leaves (90 keys plus a right-most child pointer), and each leaf holds about 110 rows. One interior level already reaches 10,000 rows, and an interior page can point to hundreds of children, so a third level reaches millions of rows. Finding any row by its key costs one page read per level: a <code class="sq-mono">WHERE id = ?</code> lookup on a table of tens of millions of rows reads about three or four pages.</p>
+          <dl class="sq-terms">
+            <dt>Page</dt><dd>The fixed-size unit SQLite reads and writes; 4,096 bytes by default (PRAGMA page_size).</dd>
+            <dt>B+tree</dt><dd>A tree whose data lives only in the leaves; interior pages hold routing keys. SQLite uses it for rowid tables.</dd>
+            <dt>Fan-out</dt><dd>How many children one interior page points to. High fan-out keeps trees shallow.</dd>
+            <dt>dbstat</dt><dd>A virtual table with one row per page: its type, cell count, free space and position in its tree.</dd>
+          </dl>
+        </div>
+        <div class="section-heading sq-mt0">Build a table and look at its pages</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- 10,000 rows, generated with a recursive CTE (lesson 5)</span>
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> people (id <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>, name <span class="kw">TEXT</span>, email <span class="kw">TEXT</span>);
+<span class="kw">WITH</span> <span class="kw">RECURSIVE</span> n(i) <span class="kw">AS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">UNION</span> <span class="kw">ALL</span> <span class="kw">SELECT</span> i + <span class="num">1</span> <span class="kw">FROM</span> n <span class="kw">WHERE</span> i &lt; <span class="num">10000</span>)
+<span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">SELECT</span> i, <span class="str">&#x27;user&#x27;</span> || i, <span class="str">&#x27;user&#x27;</span> || i || <span class="str">&#x27;@example.com&#x27;</span> <span class="kw">FROM</span> n;
+<span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_people_email <span class="kw">ON</span> people(email);
+
+<span class="kw">PRAGMA</span> page_size;
+<span class="kw">PRAGMA</span> page_count;
+
+<span class="cm">-- One row per B-tree: how many pages, and how they split</span>
+<span class="kw">SELECT</span> name, <span class="fn">count</span>(*) <span class="kw">AS</span> pages,
+       <span class="fn">sum</span>(pagetype = <span class="str">&#x27;internal&#x27;</span>) <span class="kw">AS</span> interior,
+       <span class="fn">sum</span>(pagetype = <span class="str">&#x27;leaf&#x27;</span>) <span class="kw">AS</span> leaves, <span class="fn">sum</span>(ncell) <span class="kw">AS</span> cells
+<span class="kw">FROM</span> dbstat <span class="kw">GROUP</span> <span class="kw">BY</span> name <span class="kw">ORDER</span> <span class="kw">BY</span> pages <span class="kw">DESC</span>;
+
+<span class="cm">-- The root page of the table, then its first leaves</span>
+<span class="kw">SELECT</span> pageno, pagetype, ncell <span class="kw">FROM</span> dbstat
+<span class="kw">WHERE</span> name = <span class="str">&#x27;people&#x27;</span> <span class="kw">ORDER</span> <span class="kw">BY</span> path <span class="kw">LIMIT</span> <span class="num">3</span>;</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">sqlite&gt;</span> .mode table
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE people (id INTEGER PRIMARY KEY, name TEXT, email TEXT);
+<span class="r-prompt">sqlite&gt;</span> WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i &lt; 10000)
+   ...&gt; INSERT INTO people SELECT i, &#x27;user&#x27; || i, &#x27;user&#x27; || i || &#x27;@example.com&#x27; FROM n;
+<span class="r-prompt">sqlite&gt;</span> CREATE INDEX idx_people_email ON people(email);
+<span class="r-prompt">sqlite&gt;</span> PRAGMA page_size;
+<span class="r-table">+-----------+</span>
+<span class="r-table">| page_size |</span>
+<span class="r-table">+-----------+</span>
+<span class="r-table">| 4096      |</span>
+<span class="r-table">+-----------+</span>
+<span class="r-prompt">sqlite&gt;</span> PRAGMA page_count;
+<span class="r-table">+------------+</span>
+<span class="r-table">| page_count |</span>
+<span class="r-table">+------------+</span>
+<span class="r-table">| 163        |</span>
+<span class="r-table">+------------+</span>
+<span class="r-prompt">sqlite&gt;</span> SELECT name, count(*) AS pages,
+   ...&gt;        sum(pagetype = &#x27;internal&#x27;) AS interior,
+   ...&gt;        sum(pagetype = &#x27;leaf&#x27;) AS leaves, sum(ncell) AS cells
+   ...&gt; FROM dbstat GROUP BY name ORDER BY pages DESC;
+<span class="r-table">+------------------+-------+----------+--------+-------+</span>
+<span class="r-table">|       name       | pages | interior | leaves | cells |</span>
+<span class="r-table">+------------------+-------+----------+--------+-------+</span>
+<span class="r-table">| people           | 92    | 1        | 91     | 10090 |</span>
+<span class="r-table">| idx_people_email | 70    | 1        | 69     | 10000 |</span>
+<span class="r-table">| sqlite_schema    | 1     | 0        | 1      | 2     |</span>
+<span class="r-table">+------------------+-------+----------+--------+-------+</span>
+<span class="r-prompt">sqlite&gt;</span> SELECT pageno, pagetype, ncell FROM dbstat
+   ...&gt; WHERE name = &#x27;people&#x27; ORDER BY path LIMIT 3;
+<span class="r-table">+--------+----------+-------+</span>
+<span class="r-table">| pageno | pagetype | ncell |</span>
+<span class="r-table">+--------+----------+-------+</span>
+<span class="r-table">| 2      | internal | 90    |</span>
+<span class="r-table">| 3      | leaf     | 126   |</span>
+<span class="r-table">| 4      | leaf     | 116   |</span>
+<span class="r-table">+--------+----------+-------+</span></code></div>
+        </div>
+        <div class="notice notice-info sq-mt12"><strong>Check the arithmetic:</strong> 92 + 70 + 1 = 163 pages, the same as PRAGMA page_count. Every page in the file belongs to exactly one B-tree, or to the free list after a DELETE.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">2 · Atomic Commit, Journals and Locks</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p>By default SQLite runs in <strong>rollback-journal</strong> mode (<code class="sq-mono">journal_mode = delete</code>). Before changing a page in the database file, it copies the original page into a separate <code class="sq-mono">-journal</code> file. If the power fails halfway through a commit, the next connection finds the journal and copies the old pages back. That is how a single file gets <strong>atomic</strong> commits without a server.</p>
+          <p>Concurrency is controlled by five lock states on the file. <strong>SHARED</strong> lets a connection read, and many can hold it at once. <strong>RESERVED</strong> means &ldquo;I intend to write&rdquo;: only one connection can hold it, but readers carry on. <strong>PENDING</strong> blocks new readers while a writer waits for the current ones to finish, and <strong>EXCLUSIVE</strong> is held for the moment the writer changes the file. The result is <em>one writer at a time</em>. In the session below, terminal A takes RESERVED with <code class="sq-mono">BEGIN IMMEDIATE</code>. Terminal B can still read and sees the old balances, because A's changes are still only in A's memory. But B cannot write.</p>
+          <p>A second writer does not have to fail at once: <code class="sq-mono">.timeout</code> (or <code class="sq-mono">sqlite3_busy_timeout</code>, or Django's <code class="sq-mono">timeout</code> option) makes it wait and retry. The shell's default timeout is zero, which is why B fails at once here. Whether waiting is good enough depends on how much of the time the write lock is taken. Multiply <strong>writes per second</strong> by the <strong>average write-transaction time</strong>. That gives the fraction of time the lock is busy, the utilisation &rho; from queueing theory. Waits grow roughly as &rho;&nbsp;/&nbsp;(1&nbsp;&minus;&nbsp;&rho;): below about 20% they are rare, and past about 50% queues build quickly.</p>
+          <dl class="sq-terms">
+            <dt>Rollback journal</dt><dd>A file of original pages, written before the database is changed, used to undo an interrupted commit.</dd>
+            <dt>RESERVED lock</dt><dd>Held by the one connection that intends to write; readers may continue.</dd>
+            <dt>SQLITE_BUSY (5)</dt><dd>The error returned when a lock cannot be obtained. The shell prints it as &ldquo;database is locked (5)&rdquo;.</dd>
+            <dt>Utilisation (&rho;)</dt><dd>Writes per second &times; seconds per write: the fraction of time the write lock is held.</dd>
+          </dl>
+        </div>
+        <div class="section-heading sq-mt0">Two terminals, one database</div>
+        <p class="sq-note-lh">Open two terminal windows on the same file. Lines marked A run in the first, lines marked B in the second, in the order shown.</p>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Setup, once, in either terminal</span>
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> accounts (id <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>, owner <span class="kw">TEXT</span>, balance <span class="kw">INTEGER</span>);
+<span class="kw">INSERT</span> <span class="kw">INTO</span> accounts <span class="kw">VALUES</span> (<span class="num">1</span>, <span class="str">&#x27;Alice&#x27;</span>, <span class="num">100</span>), (<span class="num">2</span>, <span class="str">&#x27;Bob&#x27;</span>, <span class="num">50</span>);
+<span class="cm">-- A</span>
+<span class="kw">PRAGMA</span> journal_mode;
+<span class="kw">BEGIN</span> <span class="kw">IMMEDIATE</span>;
+<span class="kw">UPDATE</span> accounts <span class="kw">SET</span> balance = balance - <span class="num">30</span> <span class="kw">WHERE</span> id = <span class="num">1</span>;
+<span class="cm">-- B</span>
+<span class="kw">SELECT</span> owner, balance <span class="kw">FROM</span> accounts;
+<span class="kw">UPDATE</span> accounts <span class="kw">SET</span> balance = balance + <span class="num">30</span> <span class="kw">WHERE</span> id = <span class="num">2</span>;
+<span class="cm">-- A</span>
+<span class="kw">UPDATE</span> accounts <span class="kw">SET</span> balance = balance + <span class="num">30</span> <span class="kw">WHERE</span> id = <span class="num">2</span>;
+<span class="kw">COMMIT</span>;
+<span class="cm">-- B</span>
+<span class="kw">SELECT</span> owner, balance <span class="kw">FROM</span> accounts;</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">[A] sqlite&gt;</span> .mode table
+<span class="r-prompt">[B] sqlite&gt;</span> .mode table
+<span class="r-prompt">[A] sqlite&gt;</span> PRAGMA journal_mode;
+<span class="r-table">+--------------+</span>
+<span class="r-table">| journal_mode |</span>
+<span class="r-table">+--------------+</span>
+<span class="r-table">| delete       |</span>
+<span class="r-table">+--------------+</span>
+<span class="r-prompt">[A] sqlite&gt;</span> BEGIN IMMEDIATE;
+<span class="r-prompt">[A] sqlite&gt;</span> UPDATE accounts SET balance = balance - 30 WHERE id = 1;
+<span class="r-prompt">[B] sqlite&gt;</span> SELECT owner, balance FROM accounts;
+<span class="r-table">+-------+---------+</span>
+<span class="r-table">| owner | balance |</span>
+<span class="r-table">+-------+---------+</span>
+<span class="r-table">| Alice | 100     |</span>
+<span class="r-table">| Bob   | 50      |</span>
+<span class="r-table">+-------+---------+</span>
+<span class="r-prompt">[B] sqlite&gt;</span> UPDATE accounts SET balance = balance + 30 WHERE id = 2;
+<span class="r-error">Runtime error: database is locked (5)</span>
+<span class="r-prompt">[A] sqlite&gt;</span> UPDATE accounts SET balance = balance + 30 WHERE id = 2;
+<span class="r-prompt">[A] sqlite&gt;</span> COMMIT;
+<span class="r-prompt">[B] sqlite&gt;</span> SELECT owner, balance FROM accounts;
+<span class="r-table">+-------+---------+</span>
+<span class="r-table">| owner | balance |</span>
+<span class="r-table">+-------+---------+</span>
+<span class="r-table">| Alice | 70      |</span>
+<span class="r-table">| Bob   | 80      |</span>
+<span class="r-table">+-------+---------+</span></code></div>
+        </div>
+        <div class="section-heading">Case study: measuring the lock on a live server</div>
+        <p class="sq-note-lh">This site runs on SQLite in rollback-journal mode. Watching for the <code class="sq-mono">-journal</code> file of its main database every 0.67&nbsp;ms for ten minutes (2026-09-25, early morning) found 7 write transactions. The median lock was held for 3.1&nbsp;ms and the longest for 5.5&nbsp;ms, so the lock was busy <strong>0.004%</strong> of the time. Even at 4&nbsp;ms per commit, one writer can manage about 240 commits a second (lesson 6), so an average load like this is far below the limit. The &ldquo;database is locked&rdquo; errors the site did have came from somewhere else: the trap in the next lesson.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">3 · Isolation, Snapshots and the Lock-Upgrade Trap</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p>In <strong>WAL mode</strong> (<code class="sq-mono">PRAGMA journal_mode = WAL</code>), changes are appended to a separate <code class="sq-mono">-wal</code> file instead of being written into the database, so readers and a writer no longer block each other. Each read transaction sees a fixed <strong>snapshot</strong>: whatever had been committed when it first read. In the session below, B keeps seeing Alice's balance as 100 even after A has committed 70. That is what makes SQLite's transactions <strong>serializable</strong>, the strictest isolation level in the SQL standard.</p>
+          <p>Now B tries to write. Its snapshot is out of date, and if the update were allowed B would compute 100&nbsp;&minus;&nbsp;30 and overwrite A's change. That is a <strong>lost update</strong>. SQLite refuses. Note the timing: B had a 5-second busy timeout, yet the error came back in 0.000&nbsp;s. Waiting cannot help, because the snapshot will never become current, so SQLite skips the busy handler and returns at once (the extended code, <code class="sq-mono">SQLITE_BUSY_SNAPSHOT</code>, is 517). The only way forward is to roll back and start again.</p>
+          <p>Rollback-journal mode has the same trap in a different form. A transaction that reads first holds SHARED and then asks to upgrade to RESERVED. If another connection holding RESERVED is waiting to commit, both would wait for each other forever, so SQLite returns SQLITE_BUSY to the upgrader without waiting. This is exactly what Django's <code class="sq-mono">update_or_create</code> does: a SELECT, then a write, inside one transaction. On this site it caused 81 &ldquo;database is locked&rdquo; errors even though a generous busy timeout was set. The fix is to say up front that you will write. <code class="sq-mono">BEGIN IMMEDIATE</code> takes the write lock before the first read, so a conflict turns into an ordinary wait. Or write in one statement, such as an <code class="sq-mono">INSERT &hellip; ON CONFLICT DO UPDATE</code>. Its transaction starts as a write instead of upgrading from a read, so SQLite can safely let it wait and retry.</p>
+          <dl class="sq-terms">
+            <dt>WAL (write-ahead log)</dt><dd>A journal mode where commits append to a -wal file, letting readers and one writer run at the same time.</dd>
+            <dt>Snapshot</dt><dd>The fixed view of committed data a read transaction sees from its first read until it ends.</dd>
+            <dt>Lost update</dt><dd>Two transactions read the same value, and one overwrites the other's change with a result based on stale data.</dd>
+            <dt>BEGIN IMMEDIATE</dt><dd>Starts a transaction and takes the write lock at once, before any reads.</dd>
+          </dl>
+        </div>
+        <div class="section-heading sq-mt0">A stale snapshot cannot write</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Setup, once, on a fresh file</span>
+<span class="kw">PRAGMA</span> journal_mode = WAL;
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> accounts (id <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>, owner <span class="kw">TEXT</span>, balance <span class="kw">INTEGER</span>);
+<span class="kw">INSERT</span> <span class="kw">INTO</span> accounts <span class="kw">VALUES</span> (<span class="num">1</span>, <span class="str">&#x27;Alice&#x27;</span>, <span class="num">100</span>), (<span class="num">2</span>, <span class="str">&#x27;Bob&#x27;</span>, <span class="num">50</span>);
+<span class="cm">-- B: wait up to 5 seconds for locks</span>
+.timeout <span class="num">5000</span>
+<span class="cm">-- A and B both start a transaction and read Alice&#x27;s balance</span>
+<span class="kw">BEGIN</span>;
+<span class="kw">SELECT</span> balance <span class="kw">FROM</span> accounts <span class="kw">WHERE</span> id = <span class="num">1</span>;
+<span class="cm">-- A withdraws 30 and commits</span>
+<span class="kw">UPDATE</span> accounts <span class="kw">SET</span> balance = balance - <span class="num">30</span> <span class="kw">WHERE</span> id = <span class="num">1</span>;
+<span class="kw">COMMIT</span>;
+<span class="cm">-- B still sees 100, and its write fails immediately</span>
+<span class="kw">SELECT</span> balance <span class="kw">FROM</span> accounts <span class="kw">WHERE</span> id = <span class="num">1</span>;
+<span class="kw">UPDATE</span> accounts <span class="kw">SET</span> balance = balance - <span class="num">30</span> <span class="kw">WHERE</span> id = <span class="num">1</span>;
+<span class="kw">ROLLBACK</span>;
+<span class="cm">-- B again, the right way: take the write lock before reading</span>
+<span class="kw">BEGIN</span> <span class="kw">IMMEDIATE</span>;
+<span class="kw">SELECT</span> balance <span class="kw">FROM</span> accounts <span class="kw">WHERE</span> id = <span class="num">1</span>;
+<span class="kw">UPDATE</span> accounts <span class="kw">SET</span> balance = balance - <span class="num">30</span> <span class="kw">WHERE</span> id = <span class="num">1</span>;
+<span class="kw">COMMIT</span>;</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">[A] sqlite&gt;</span> .mode table
+<span class="r-prompt">[B] sqlite&gt;</span> .mode table
+<span class="r-prompt">[A] sqlite&gt;</span> PRAGMA journal_mode;
+<span class="r-table">+--------------+</span>
+<span class="r-table">| journal_mode |</span>
+<span class="r-table">+--------------+</span>
+<span class="r-table">| wal          |</span>
+<span class="r-table">+--------------+</span>
+<span class="r-prompt">[B] sqlite&gt;</span> .timeout 5000
+<span class="r-prompt">[A] sqlite&gt;</span> BEGIN;
+<span class="r-prompt">[B] sqlite&gt;</span> BEGIN;
+<span class="r-prompt">[A] sqlite&gt;</span> SELECT balance FROM accounts WHERE id = 1;
+<span class="r-table">+---------+</span>
+<span class="r-table">| balance |</span>
+<span class="r-table">+---------+</span>
+<span class="r-table">| 100     |</span>
+<span class="r-table">+---------+</span>
+<span class="r-prompt">[B] sqlite&gt;</span> SELECT balance FROM accounts WHERE id = 1;
+<span class="r-table">+---------+</span>
+<span class="r-table">| balance |</span>
+<span class="r-table">+---------+</span>
+<span class="r-table">| 100     |</span>
+<span class="r-table">+---------+</span>
+<span class="r-prompt">[A] sqlite&gt;</span> UPDATE accounts SET balance = balance - 30 WHERE id = 1;
+<span class="r-prompt">[A] sqlite&gt;</span> COMMIT;
+<span class="r-prompt">[B] sqlite&gt;</span> SELECT balance FROM accounts WHERE id = 1;
+<span class="r-table">+---------+</span>
+<span class="r-table">| balance |</span>
+<span class="r-table">+---------+</span>
+<span class="r-table">| 100     |</span>
+<span class="r-table">+---------+</span>
+<span class="r-prompt">[B] sqlite&gt;</span> .timer on
+<span class="r-prompt">[B] sqlite&gt;</span> UPDATE accounts SET balance = balance - 30 WHERE id = 1;
+<span class="r-dim">Run Time: real 0.000 user 0.000014 sys 0.000083</span>
+<span class="r-error">Runtime error: database is locked (5)</span>
+<span class="r-prompt">[B] sqlite&gt;</span> .timer off
+<span class="r-prompt">[B] sqlite&gt;</span> ROLLBACK;
+<span class="r-prompt">[B] sqlite&gt;</span> BEGIN IMMEDIATE;
+<span class="r-prompt">[B] sqlite&gt;</span> SELECT balance FROM accounts WHERE id = 1;
+<span class="r-table">+---------+</span>
+<span class="r-table">| balance |</span>
+<span class="r-table">+---------+</span>
+<span class="r-table">| 70      |</span>
+<span class="r-table">+---------+</span>
+<span class="r-prompt">[B] sqlite&gt;</span> UPDATE accounts SET balance = balance - 30 WHERE id = 1;
+<span class="r-prompt">[B] sqlite&gt;</span> COMMIT;
+<span class="r-prompt">[B] sqlite&gt;</span> SELECT balance FROM accounts WHERE id = 1;
+<span class="r-table">+---------+</span>
+<span class="r-table">| balance |</span>
+<span class="r-table">+---------+</span>
+<span class="r-table">| 40      |</span>
+<span class="r-table">+---------+</span></code></div>
+        </div>
+        <div class="notice notice-success sq-mt12"><strong>Result:</strong> 100 &minus; 30 &minus; 30 = 40. Both withdrawals count. Without the error, B's update would have produced 70 and one withdrawal would have vanished.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">4 · The Query Planner and Cost-Based Optimisation</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p>SQL says <em>what</em> you want. The <strong>query planner</strong> decides <em>how</em> to get it, and <code class="sq-mono">EXPLAIN QUERY PLAN</code> shows its choice. <code class="sq-mono">SCAN</code> means reading every row. <code class="sq-mono">SEARCH &hellip; USING INDEX</code> means descending an index B-tree to the matching entries and then fetching each row from the table by rowid. <code class="sq-mono">USING COVERING INDEX</code> means the index alone holds every column the query needs, so the table is never touched. <code class="sq-mono">USE TEMP B-TREE FOR ORDER BY</code> means the results are sorted after the fact, because no index delivers them in order.</p>
+          <p>On the 200,000-row table below, adding an index turns a 15&nbsp;ms scan into a lookup too fast for the shell's timer to register. The time saved grows with the size of the table: a scan costs work in proportion to the number of rows, while an index lookup costs only a few page reads for each match.</p>
+          <p>When several plans are possible, SQLite estimates the cost of each and picks the cheapest. Since version 3.8.0 its planner (the &ldquo;next-generation query planner&rdquo;) has kept only the few cheapest partial join orders at each step (its &ldquo;N nearest neighbours&rdquo; search) rather than trying every possible order. The estimates depend on statistics: <code class="sq-mono">ANALYZE</code> samples each index and writes a summary to <code class="sq-mono">sqlite_stat1</code>. The line <code class="sq-mono">200000 40 1</code> means the index covers 200,000 rows, each <code class="sq-mono">customer_id</code> matches about 40 of them, and each (<code class="sq-mono">customer_id</code>, <code class="sq-mono">total</code>) pair matches about 1. Stale or missing statistics are a common cause of a sudden bad plan in production.</p>
+          <dl class="sq-terms">
+            <dt>Covering index</dt><dd>An index that contains every column a query reads, so the table itself is never visited.</dd>
+            <dt>Selectivity</dt><dd>The fraction of rows a condition matches. The more selective a condition, the more an index on it helps.</dd>
+            <dt>ANALYZE</dt><dd>Collects index statistics into sqlite_stat1 for the planner's cost estimates.</dd>
+            <dt>Cost-based optimiser</dt><dd>A planner that estimates the cost of several alternative plans and runs the cheapest.</dd>
+          </dl>
+        </div>
+        <div class="section-heading sq-mt0">Watch the plan change</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="kw">CREATE</span> <span class="kw">TABLE</span> orders (id <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>, customer_id <span class="kw">INTEGER</span>, status <span class="kw">TEXT</span>, total <span class="kw">REAL</span>);
+<span class="kw">WITH</span> <span class="kw">RECURSIVE</span> n(i) <span class="kw">AS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">UNION</span> <span class="kw">ALL</span> <span class="kw">SELECT</span> i + <span class="num">1</span> <span class="kw">FROM</span> n <span class="kw">WHERE</span> i &lt; <span class="num">200000</span>)
+<span class="kw">INSERT</span> <span class="kw">INTO</span> orders <span class="kw">SELECT</span> i, i % <span class="num">5000</span>, <span class="kw">CASE</span> <span class="kw">WHEN</span> i % <span class="num">20</span> = <span class="num">0</span> <span class="kw">THEN</span> <span class="str">&#x27;refunded&#x27;</span> <span class="kw">ELSE</span> <span class="str">&#x27;paid&#x27;</span> <span class="kw">END</span>, (i % <span class="num">997</span>) / <span class="num">10.0</span> <span class="kw">FROM</span> n;
+
+<span class="kw">EXPLAIN</span> <span class="kw">QUERY</span> <span class="kw">PLAN</span> <span class="kw">SELECT</span> <span class="fn">sum</span>(total) <span class="kw">FROM</span> orders <span class="kw">WHERE</span> customer_id = <span class="num">42</span>;
+<span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_orders_customer <span class="kw">ON</span> orders(customer_id);
+<span class="kw">EXPLAIN</span> <span class="kw">QUERY</span> <span class="kw">PLAN</span> <span class="kw">SELECT</span> <span class="fn">sum</span>(total) <span class="kw">FROM</span> orders <span class="kw">WHERE</span> customer_id = <span class="num">42</span>;
+<span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_orders_customer_total <span class="kw">ON</span> orders(customer_id, total);
+<span class="kw">EXPLAIN</span> <span class="kw">QUERY</span> <span class="kw">PLAN</span> <span class="kw">SELECT</span> <span class="fn">sum</span>(total) <span class="kw">FROM</span> orders <span class="kw">WHERE</span> customer_id = <span class="num">42</span>;
+<span class="kw">EXPLAIN</span> <span class="kw">QUERY</span> <span class="kw">PLAN</span> <span class="kw">SELECT</span> * <span class="kw">FROM</span> orders <span class="kw">WHERE</span> status = <span class="str">&#x27;refunded&#x27;</span> <span class="kw">ORDER</span> <span class="kw">BY</span> total <span class="kw">DESC</span> <span class="kw">LIMIT</span> <span class="num">5</span>;
+
+<span class="kw">ANALYZE</span>;
+<span class="kw">SELECT</span> tbl, idx, stat <span class="kw">FROM</span> sqlite_stat1;</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">sqlite&gt;</span> .mode table
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER, status TEXT, total REAL);
+<span class="r-prompt">sqlite&gt;</span> WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i &lt; 200000)
+   ...&gt; INSERT INTO orders SELECT i, i % 5000, CASE WHEN i % 20 = 0 THEN &#x27;refunded&#x27; ELSE &#x27;paid&#x27; END, (i % 997) / 10.0 FROM n;
+<span class="r-prompt">sqlite&gt;</span> EXPLAIN QUERY PLAN SELECT sum(total) FROM orders WHERE customer_id = 42;
+<span class="r-table">QUERY PLAN</span>
+<span class="r-table">`--SCAN orders</span>
+<span class="r-prompt">sqlite&gt;</span> .timer on
+<span class="r-prompt">sqlite&gt;</span> SELECT sum(total) FROM orders WHERE customer_id = 42;
+<span class="r-table">+------------+</span>
+<span class="r-table">| sum(total) |</span>
+<span class="r-table">+------------+</span>
+<span class="r-table">| 1338.0     |</span>
+<span class="r-table">+------------+</span>
+<span class="r-dim">Run Time: real 0.015 user 0.008173 sys 0.003303</span>
+<span class="r-prompt">sqlite&gt;</span> .timer off
+<span class="r-prompt">sqlite&gt;</span> CREATE INDEX idx_orders_customer ON orders(customer_id);
+<span class="r-prompt">sqlite&gt;</span> EXPLAIN QUERY PLAN SELECT sum(total) FROM orders WHERE customer_id = 42;
+<span class="r-table">QUERY PLAN</span>
+<span class="r-table">`--SEARCH orders USING INDEX idx_orders_customer (customer_id=?)</span>
+<span class="r-prompt">sqlite&gt;</span> .timer on
+<span class="r-prompt">sqlite&gt;</span> SELECT sum(total) FROM orders WHERE customer_id = 42;
+<span class="r-table">+------------+</span>
+<span class="r-table">| sum(total) |</span>
+<span class="r-table">+------------+</span>
+<span class="r-table">| 1338.0     |</span>
+<span class="r-table">+------------+</span>
+<span class="r-dim">Run Time: real 0.000 user 0.000000 sys 0.000349</span>
+<span class="r-prompt">sqlite&gt;</span> .timer off
+<span class="r-prompt">sqlite&gt;</span> CREATE INDEX idx_orders_customer_total ON orders(customer_id, total);
+<span class="r-prompt">sqlite&gt;</span> EXPLAIN QUERY PLAN SELECT sum(total) FROM orders WHERE customer_id = 42;
+<span class="r-table">QUERY PLAN</span>
+<span class="r-table">`--SEARCH orders USING COVERING INDEX idx_orders_customer_total (customer_id=?)</span>
+<span class="r-prompt">sqlite&gt;</span> EXPLAIN QUERY PLAN SELECT * FROM orders WHERE status = &#x27;refunded&#x27; ORDER BY total DESC LIMIT 5;
+<span class="r-table">QUERY PLAN</span>
+<span class="r-table">|--SCAN orders</span>
+<span class="r-table">`--USE TEMP B-TREE FOR ORDER BY</span>
+<span class="r-prompt">sqlite&gt;</span> ANALYZE;
+<span class="r-prompt">sqlite&gt;</span> SELECT tbl, idx, stat FROM sqlite_stat1;
+<span class="r-table">+--------+---------------------------+-------------+</span>
+<span class="r-table">|  tbl   |            idx            |    stat     |</span>
+<span class="r-table">+--------+---------------------------+-------------+</span>
+<span class="r-table">| orders | idx_orders_customer_total | 200000 40 1 |</span>
+<span class="r-table">| orders | idx_orders_customer       | 200000 40   |</span>
+<span class="r-table">+--------+---------------------------+-------------+</span></code></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">5 · Recursive Queries, Graphs and Fixed Points</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p>A <code class="sq-mono">WITH RECURSIVE</code> query has two parts joined by <code class="sq-mono">UNION</code> or <code class="sq-mono">UNION ALL</code>. The first part seeds a queue, and the second part runs once for each row taken off the queue, adding any new rows it produces. The query ends when the queue is empty. Because each row goes through the recursive step exactly once, this is the same idea as <strong>semi-naive evaluation</strong> in Datalog. It lets plain SQL compute a <strong>transitive closure</strong>: everything reachable from a starting point in a graph.</p>
+          <p>Graphs can have cycles. The route table below includes DSM&nbsp;&rarr;&nbsp;ORD&nbsp;&rarr;&nbsp;DEN&nbsp;&rarr;&nbsp;DSM, so with <code class="sq-mono">UNION ALL</code> the queue never empties and the query only stops because of <code class="sq-mono">LIMIT</code>. Switching to <code class="sq-mono">UNION</code> discards any row that has already been produced, so the loop reaches a <strong>fixed point</strong> (no new rows) and ends by itself. This works because the graph is finite.</p>
+          <p>To list the paths themselves, rather than just the cities reached, carry the path along as a column and refuse to revisit a city already on it. <code class="sq-mono">instr</code> is enough here because every airport code is exactly three letters. With labels of different lengths you would add separators so that one label can't match inside another. Rows come off SQLite's queue first in, first out, so the recursion runs breadth-first: in the first query every city one hop away appears before any city two hops away.</p>
+          <dl class="sq-terms">
+            <dt>Transitive closure</dt><dd>Every node reachable from a start node by following edges any number of times.</dd>
+            <dt>Fixed point</dt><dd>The state where one more round of the recursive step adds nothing new.</dd>
+            <dt>UNION vs UNION ALL</dt><dd>UNION discards duplicate rows, which stops cycles; UNION ALL keeps them all.</dd>
+          </dl>
+        </div>
+        <div class="section-heading sq-mt0">Reachability and simple paths in a graph with a cycle</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="kw">CREATE</span> <span class="kw">TABLE</span> routes (src <span class="kw">TEXT</span>, dst <span class="kw">TEXT</span>);
+<span class="kw">INSERT</span> <span class="kw">INTO</span> routes <span class="kw">VALUES</span> (<span class="str">&#x27;DSM&#x27;</span>,<span class="str">&#x27;ORD&#x27;</span>), (<span class="str">&#x27;ORD&#x27;</span>,<span class="str">&#x27;DEN&#x27;</span>), (<span class="str">&#x27;DEN&#x27;</span>,<span class="str">&#x27;DSM&#x27;</span>), (<span class="str">&#x27;DEN&#x27;</span>,<span class="str">&#x27;SFO&#x27;</span>), (<span class="str">&#x27;ORD&#x27;</span>,<span class="str">&#x27;JFK&#x27;</span>);
+
+<span class="cm">-- UNION ALL: loops round the cycle for ever (LIMIT stops it)</span>
+<span class="kw">WITH</span> <span class="kw">RECURSIVE</span> reach(city) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="str">&#x27;DSM&#x27;</span>
+  <span class="kw">UNION</span> <span class="kw">ALL</span>
+  <span class="kw">SELECT</span> r.dst <span class="kw">FROM</span> routes r <span class="kw">JOIN</span> reach <span class="kw">ON</span> r.src = reach.city
+)
+<span class="kw">SELECT</span> city <span class="kw">FROM</span> reach <span class="kw">LIMIT</span> <span class="num">8</span>;
+
+<span class="cm">-- UNION: discards repeats, so it reaches a fixed point</span>
+<span class="kw">WITH</span> <span class="kw">RECURSIVE</span> reach(city) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="str">&#x27;DSM&#x27;</span>
+  <span class="kw">UNION</span>
+  <span class="kw">SELECT</span> r.dst <span class="kw">FROM</span> routes r <span class="kw">JOIN</span> reach <span class="kw">ON</span> r.src = reach.city
+)
+<span class="kw">SELECT</span> city <span class="kw">FROM</span> reach;
+
+<span class="cm">-- Every simple path, never revisiting a city</span>
+<span class="kw">WITH</span> <span class="kw">RECURSIVE</span> trip(city, path, hops) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="str">&#x27;DSM&#x27;</span>, <span class="str">&#x27;DSM&#x27;</span>, <span class="num">0</span>
+  <span class="kw">UNION</span> <span class="kw">ALL</span>
+  <span class="kw">SELECT</span> r.dst, trip.path || <span class="str">&#x27;&gt;&#x27;</span> || r.dst, trip.hops + <span class="num">1</span>
+  <span class="kw">FROM</span> routes r <span class="kw">JOIN</span> trip <span class="kw">ON</span> r.src = trip.city
+  <span class="kw">WHERE</span> <span class="fn">instr</span>(trip.path, r.dst) = <span class="num">0</span>
+)
+<span class="kw">SELECT</span> path, hops <span class="kw">FROM</span> trip <span class="kw">ORDER</span> <span class="kw">BY</span> hops, path;</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">sqlite&gt;</span> .mode table
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE routes (src TEXT, dst TEXT);
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO routes VALUES (&#x27;DSM&#x27;,&#x27;ORD&#x27;), (&#x27;ORD&#x27;,&#x27;DEN&#x27;), (&#x27;DEN&#x27;,&#x27;DSM&#x27;), (&#x27;DEN&#x27;,&#x27;SFO&#x27;), (&#x27;ORD&#x27;,&#x27;JFK&#x27;);
+<span class="r-prompt">sqlite&gt;</span> WITH RECURSIVE reach(city) AS (
+(x1...&gt;   SELECT &#x27;DSM&#x27;
+(x1...&gt;   UNION ALL
+(x1...&gt;   SELECT r.dst FROM routes r JOIN reach ON r.src = reach.city
+(x1...&gt; )
+   ...&gt; SELECT city FROM reach LIMIT 8;
+<span class="r-table">+------+</span>
+<span class="r-table">| city |</span>
+<span class="r-table">+------+</span>
+<span class="r-table">| DSM  |</span>
+<span class="r-table">| ORD  |</span>
+<span class="r-table">| DEN  |</span>
+<span class="r-table">| JFK  |</span>
+<span class="r-table">| DSM  |</span>
+<span class="r-table">| SFO  |</span>
+<span class="r-table">| ORD  |</span>
+<span class="r-table">| DEN  |</span>
+<span class="r-table">+------+</span>
+<span class="r-prompt">sqlite&gt;</span> WITH RECURSIVE reach(city) AS (
+(x1...&gt;   SELECT &#x27;DSM&#x27;
+(x1...&gt;   UNION
+(x1...&gt;   SELECT r.dst FROM routes r JOIN reach ON r.src = reach.city
+(x1...&gt; )
+   ...&gt; SELECT city FROM reach;
+<span class="r-table">+------+</span>
+<span class="r-table">| city |</span>
+<span class="r-table">+------+</span>
+<span class="r-table">| DSM  |</span>
+<span class="r-table">| ORD  |</span>
+<span class="r-table">| DEN  |</span>
+<span class="r-table">| JFK  |</span>
+<span class="r-table">| SFO  |</span>
+<span class="r-table">+------+</span>
+<span class="r-prompt">sqlite&gt;</span> WITH RECURSIVE trip(city, path, hops) AS (
+(x1...&gt;   SELECT &#x27;DSM&#x27;, &#x27;DSM&#x27;, 0
+(x1...&gt;   UNION ALL
+(x1...&gt;   SELECT r.dst, trip.path || &#x27;&gt;&#x27; || r.dst, trip.hops + 1
+(x1...&gt;   FROM routes r JOIN trip ON r.src = trip.city
+(x1...&gt;   WHERE instr(trip.path, r.dst) = 0
+(x1...&gt; )
+   ...&gt; SELECT path, hops FROM trip ORDER BY hops, path;
+<span class="r-table">+-----------------+------+</span>
+<span class="r-table">|      path       | hops |</span>
+<span class="r-table">+-----------------+------+</span>
+<span class="r-table">| DSM             | 0    |</span>
+<span class="r-table">| DSM&gt;ORD         | 1    |</span>
+<span class="r-table">| DSM&gt;ORD&gt;DEN     | 2    |</span>
+<span class="r-table">| DSM&gt;ORD&gt;JFK     | 2    |</span>
+<span class="r-table">| DSM&gt;ORD&gt;DEN&gt;SFO | 3    |</span>
+<span class="r-table">+-----------------+------+</span></code></div>
+        </div>
+        <div class="notice notice-info sq-mt12"><strong>Reading the prompt:</strong> inside an open parenthesis the 3.45 shell shows <code class="sq-mono">(x1...&gt;</code> as its continuation prompt, where the number is how many brackets are still open.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">6 · Durability and the Cost of fsync</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p>A commit is <strong>durable</strong> once the data is on the disk itself, not just in the operating system's memory. To make sure, SQLite calls <code class="sq-mono">fsync</code>, which waits for the disk to confirm the write, and that wait is by far the most expensive part of a commit. The benchmark below timed 1,000 single-row inserts on this site's server under four settings. In every case the CPU time was under a second. The rest of the time was spent waiting for the disk.</p>
+          <p><strong>A</strong> is SQLite's default: a rollback journal with <code class="sq-mono">synchronous = FULL</code> and one commit per insert. Each commit writes and flushes the journal, updates the database, flushes it again and deletes the journal, which comes to about 4.2&nbsp;ms, or roughly 240 commits a second. <strong>B</strong> runs the same inserts in one transaction and is about 350 times faster, because it pays the disk cost once. <strong>C</strong> uses WAL, where a commit appends to the log and flushes once, which roughly halves the cost. <strong>D</strong> is WAL with <code class="sq-mono">synchronous = NORMAL</code>, where a commit doesn't wait for the disk at all and flushes happen only at checkpoints.</p>
+          <p>D is not free. The database cannot be corrupted, but after a power cut or operating-system crash the last few commits can be missing. Your application was told they succeeded, and they are gone. Whether that is acceptable depends on the application, and it is the classic trade between durability and throughput that every database makes somewhere. The same lesson explains why batching writes into one transaction is the most important performance habit in SQLite.</p>
+          <dl class="sq-terms">
+            <dt>Durability</dt><dd>The D in ACID: once a commit returns, the data survives a crash or power loss.</dd>
+            <dt>fsync</dt><dd>An operating-system call that returns only when the disk confirms the data has been written.</dd>
+            <dt>synchronous</dt><dd>The PRAGMA controlling how often SQLite calls fsync: OFF, NORMAL, FULL or EXTRA.</dd>
+            <dt>Checkpoint</dt><dd>In WAL mode, copying the log's pages back into the main database file.</dd>
+          </dl>
+        </div>
+        <div class="section-heading sq-mt0">The benchmark script</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code>#!/bin/bash
+set -euo pipefail
+for i in $(seq <span class="num">1000</span>); do echo &quot;<span class="kw">INSERT</span> <span class="kw">INTO</span> t <span class="kw">VALUES</span> ($i);&quot;; done &gt; inserts.sql
+(echo <span class="str">&#x27;BEGIN;&#x27;</span>; cat inserts.sql; echo <span class="str">&#x27;COMMIT;&#x27;</span>) &gt; batched.sql
+
+echo &quot;== A: rollback journal, synchronous=FULL, one commit per insert&quot;
+sqlite3 a.db <span class="str">&#x27;CREATE TABLE t (x INTEGER);&#x27;</span>
+time sqlite3 a.db &lt; inserts.sql
+
+echo &quot;== B: rollback journal, synchronous=FULL, all <span class="num">1</span>,<span class="num">000</span> in one transaction&quot;
+sqlite3 b.db <span class="str">&#x27;CREATE TABLE t (x INTEGER);&#x27;</span>
+time sqlite3 b.db &lt; batched.sql
+
+echo &quot;== C: WAL, synchronous=FULL, one commit per insert&quot;
+sqlite3 c.db <span class="str">&#x27;PRAGMA journal_mode=WAL; CREATE TABLE t (x INTEGER);&#x27;</span> &gt; /dev/null
+time sqlite3 -cmd <span class="str">&#x27;PRAGMA synchronous=FULL&#x27;</span> c.db &lt; inserts.sql
+
+echo &quot;== D: WAL, synchronous=NORMAL, one commit per insert&quot;
+sqlite3 d.db <span class="str">&#x27;PRAGMA journal_mode=WAL; CREATE TABLE t (x INTEGER);&#x27;</span> &gt; /dev/null
+time sqlite3 -cmd <span class="str">&#x27;PRAGMA synchronous=NORMAL&#x27;</span> d.db &lt; inserts.sql
+
+echo &quot;== row counts&quot;
+for f in a b c d; do echo &quot;$f.db: $(sqlite3 $f.db <span class="str">&#x27;SELECT count(*) FROM t;&#x27;</span>)&quot;; done</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">$</span> bash run.sh
+<span class="r-dim">== A: rollback journal, synchronous=FULL, one commit per insert</span>
+
+real        0m4.228s
+user        0m0.127s
+sys        0m0.725s
+<span class="r-dim">== B: rollback journal, synchronous=FULL, all 1,000 in one transaction</span>
+
+real        0m0.012s
+user        0m0.003s
+sys        0m0.005s
+<span class="r-dim">== C: WAL, synchronous=FULL, one commit per insert</span>
+
+real        0m1.802s
+user        0m0.051s
+sys        0m0.247s
+<span class="r-dim">== D: WAL, synchronous=NORMAL, one commit per insert</span>
+
+real        0m0.041s
+user        0m0.009s
+sys        0m0.021s
+<span class="r-dim">== row counts</span>
+a.db: 1000
+b.db: 1000
+c.db: 1000
+d.db: 1000</code></div>
+        </div>
+        <div class="notice notice-warning sq-mt12"><strong>Your numbers will differ:</strong> fsync speed depends on the disk and on whether it has a battery-backed write cache. The ratios between the four settings are what carry over.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">7 · Bitemporal Data: What Was True, and When We Knew It</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p>Most tables store only the current value. A <strong>bitemporal</strong> table stores two separate timelines. <strong>Valid time</strong> is when a fact is true in the world: here, the fiscal year the revenue belongs to. <strong>Transaction time</strong> is when the database believed it: from <code class="sq-mono">recorded_at</code> until <code class="sq-mono">replaced_at</code>. When a company restates last year's revenue, you don't overwrite the old figure. You close its transaction-time period and add a new row. Nothing is ever lost, and the database can answer &ldquo;what did we know on 30 June 2025?&rdquo; as easily as &ldquo;what do we know now?&rdquo;</p>
+          <p>This matters wherever history is analysed: audits, regulatory reporting and, above all, testing investment strategies on past data. A backtest that uses today's restated figures is using information nobody had at the time, called <strong>look-ahead bias</strong>, and it makes a strategy look better than it could ever have been. An as-of query removes that bias by filtering on transaction time.</p>
+          <p>Periods are stored <strong>half-open</strong>, [start,&nbsp;end), so one period can end on the same day the next begins without the two overlapping. Two periods overlap exactly when <code class="sq-mono">a.start &lt; b.end AND b.start &lt; a.end</code>. PostgreSQL can enforce &ldquo;no overlapping periods&rdquo; declaratively with an exclusion constraint (<code class="sq-mono">EXCLUDE USING gist</code>). SQLite has no such constraint, so a <code class="sq-mono">BEFORE INSERT</code> trigger with <code class="sq-mono">RAISE(ABORT, &hellip;)</code> enforces it instead. The trigger rejects the careless insert below, and the correct restatement, which closes the old row and inserts the new one in one transaction, goes through. ISO-8601 dates stored as text sort in date order, so plain <code class="sq-mono">&lt;</code> comparisons work.</p>
+          <dl class="sq-terms">
+            <dt>Valid time</dt><dd>When a fact is true in the modelled world, such as the fiscal year a figure describes.</dd>
+            <dt>Transaction time</dt><dd>When the database recorded a fact, and when it was superseded.</dd>
+            <dt>Half-open interval</dt><dd>[start, end): includes the start, excludes the end, so adjacent periods never overlap.</dd>
+            <dt>Look-ahead bias</dt><dd>Using information in a historical test that was not available at the time being tested.</dd>
+          </dl>
+        </div>
+        <div class="section-heading sq-mt0">A restatement, stored without losing history</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="kw">CREATE</span> <span class="kw">TABLE</span> revenue (
+  ticker      <span class="kw">TEXT</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,
+  fiscal_year <span class="kw">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,
+  amount_m    <span class="kw">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,
+  recorded_at <span class="kw">TEXT</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,
+  replaced_at <span class="kw">TEXT</span> <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> <span class="str">&#x27;9999-12-31&#x27;</span>
+);
+
+<span class="cm">-- No two versions of the same fact may be believed at the same time</span>
+<span class="kw">CREATE</span> <span class="kw">TRIGGER</span> revenue_no_overlap <span class="kw">BEFORE</span> <span class="kw">INSERT</span> <span class="kw">ON</span> revenue
+<span class="kw">WHEN</span> <span class="kw">EXISTS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> revenue
+             <span class="kw">WHERE</span> ticker = NEW.ticker <span class="kw">AND</span> fiscal_year = NEW.fiscal_year
+               <span class="kw">AND</span> recorded_at &lt; NEW.replaced_at <span class="kw">AND</span> NEW.recorded_at &lt; replaced_at)
+<span class="kw">BEGIN</span>
+  <span class="kw">SELECT</span> <span class="kw">RAISE</span>(<span class="kw">ABORT</span>, <span class="str">&#x27;transaction-time periods overlap&#x27;</span>);
+<span class="kw">END</span>;
+
+<span class="cm">-- Original 10-K</span>
+<span class="kw">INSERT</span> <span class="kw">INTO</span> revenue (ticker, fiscal_year, amount_m, recorded_at)
+<span class="kw">VALUES</span> (<span class="str">&#x27;ACME&#x27;</span>, <span class="num">2024</span>, <span class="num">1200</span>, <span class="str">&#x27;2025-02-20&#x27;</span>);
+
+<span class="cm">-- Wrong: add the restated figure without closing the old one</span>
+<span class="kw">INSERT</span> <span class="kw">INTO</span> revenue (ticker, fiscal_year, amount_m, recorded_at)
+<span class="kw">VALUES</span> (<span class="str">&#x27;ACME&#x27;</span>, <span class="num">2024</span>, <span class="num">1150</span>, <span class="str">&#x27;2026-02-18&#x27;</span>);
+
+<span class="cm">-- Right: close the old version and add the new one atomically</span>
+<span class="kw">BEGIN</span>;
+<span class="kw">UPDATE</span> revenue <span class="kw">SET</span> replaced_at = <span class="str">&#x27;2026-02-18&#x27;</span>
+<span class="kw">WHERE</span> ticker = <span class="str">&#x27;ACME&#x27;</span> <span class="kw">AND</span> fiscal_year = <span class="num">2024</span> <span class="kw">AND</span> replaced_at = <span class="str">&#x27;9999-12-31&#x27;</span>;
+<span class="kw">INSERT</span> <span class="kw">INTO</span> revenue (ticker, fiscal_year, amount_m, recorded_at)
+<span class="kw">VALUES</span> (<span class="str">&#x27;ACME&#x27;</span>, <span class="num">2024</span>, <span class="num">1150</span>, <span class="str">&#x27;2026-02-18&#x27;</span>);
+<span class="kw">COMMIT</span>;
+
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> revenue;
+
+<span class="cm">-- As known on 30 June 2025, and as known today</span>
+<span class="kw">SELECT</span> amount_m <span class="kw">FROM</span> revenue
+<span class="kw">WHERE</span> ticker = <span class="str">&#x27;ACME&#x27;</span> <span class="kw">AND</span> fiscal_year = <span class="num">2024</span>
+  <span class="kw">AND</span> recorded_at &lt;= <span class="str">&#x27;2025-06-30&#x27;</span> <span class="kw">AND</span> <span class="str">&#x27;2025-06-30&#x27;</span> &lt; replaced_at;
+<span class="kw">SELECT</span> amount_m <span class="kw">FROM</span> revenue
+<span class="kw">WHERE</span> ticker = <span class="str">&#x27;ACME&#x27;</span> <span class="kw">AND</span> fiscal_year = <span class="num">2024</span>
+  <span class="kw">AND</span> recorded_at &lt;= <span class="fn">date</span>(<span class="str">&#x27;now&#x27;</span>) <span class="kw">AND</span> <span class="fn">date</span>(<span class="str">&#x27;now&#x27;</span>) &lt; replaced_at;</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">sqlite&gt;</span> .mode table
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE revenue (
+(x1...&gt;   ticker      TEXT NOT NULL,
+(x1...&gt;   fiscal_year INTEGER NOT NULL,
+(x1...&gt;   amount_m    INTEGER NOT NULL,
+(x1...&gt;   recorded_at TEXT NOT NULL,
+(x1...&gt;   replaced_at TEXT NOT NULL DEFAULT &#x27;9999-12-31&#x27;
+(x1...&gt; );
+<span class="r-prompt">sqlite&gt;</span> CREATE TRIGGER revenue_no_overlap BEFORE INSERT ON revenue
+   ...&gt; WHEN EXISTS (SELECT 1 FROM revenue
+(x1...&gt;              WHERE ticker = NEW.ticker AND fiscal_year = NEW.fiscal_year
+(x1...&gt;                AND recorded_at &lt; NEW.replaced_at AND NEW.recorded_at &lt; replaced_at)
+   ...&gt; BEGIN
+   ...&gt;   SELECT RAISE(ABORT, &#x27;transaction-time periods overlap&#x27;);
+   ...&gt; END;
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO revenue (ticker, fiscal_year, amount_m, recorded_at)
+   ...&gt; VALUES (&#x27;ACME&#x27;, 2024, 1200, &#x27;2025-02-20&#x27;);
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO revenue (ticker, fiscal_year, amount_m, recorded_at)
+   ...&gt; VALUES (&#x27;ACME&#x27;, 2024, 1150, &#x27;2026-02-18&#x27;);
+<span class="r-error">Runtime error: transaction-time periods overlap (19)</span>
+<span class="r-prompt">sqlite&gt;</span> BEGIN;
+<span class="r-prompt">sqlite&gt;</span> UPDATE revenue SET replaced_at = &#x27;2026-02-18&#x27;
+   ...&gt; WHERE ticker = &#x27;ACME&#x27; AND fiscal_year = 2024 AND replaced_at = &#x27;9999-12-31&#x27;;
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO revenue (ticker, fiscal_year, amount_m, recorded_at)
+   ...&gt; VALUES (&#x27;ACME&#x27;, 2024, 1150, &#x27;2026-02-18&#x27;);
+<span class="r-prompt">sqlite&gt;</span> COMMIT;
+<span class="r-prompt">sqlite&gt;</span> SELECT * FROM revenue;
+<span class="r-table">+--------+-------------+----------+-------------+-------------+</span>
+<span class="r-table">| ticker | fiscal_year | amount_m | recorded_at | replaced_at |</span>
+<span class="r-table">+--------+-------------+----------+-------------+-------------+</span>
+<span class="r-table">| ACME   | 2024        | 1200     | 2025-02-20  | 2026-02-18  |</span>
+<span class="r-table">| ACME   | 2024        | 1150     | 2026-02-18  | 9999-12-31  |</span>
+<span class="r-table">+--------+-------------+----------+-------------+-------------+</span>
+<span class="r-prompt">sqlite&gt;</span> SELECT amount_m FROM revenue
+   ...&gt; WHERE ticker = &#x27;ACME&#x27; AND fiscal_year = 2024
+   ...&gt;   AND recorded_at &lt;= &#x27;2025-06-30&#x27; AND &#x27;2025-06-30&#x27; &lt; replaced_at;
+<span class="r-table">+----------+</span>
+<span class="r-table">| amount_m |</span>
+<span class="r-table">+----------+</span>
+<span class="r-table">| 1200     |</span>
+<span class="r-table">+----------+</span>
+<span class="r-prompt">sqlite&gt;</span> SELECT amount_m FROM revenue
+   ...&gt; WHERE ticker = &#x27;ACME&#x27; AND fiscal_year = 2024
+   ...&gt;   AND recorded_at &lt;= date(&#x27;now&#x27;) AND date(&#x27;now&#x27;) &lt; replaced_at;
+<span class="r-table">+----------+</span>
+<span class="r-table">| amount_m |</span>
+<span class="r-table">+----------+</span>
+<span class="r-table">| 1150     |</span>
+<span class="r-table">+----------+</span></code></div>
+        </div>
+        <div class="notice notice-warning sq-mt12"><strong>Close the other door too:</strong> the trigger guards INSERT only. A production design would add a BEFORE UPDATE trigger allowing just one change, setting replaced_at on a row that is still open, so history can't be rewritten.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Thesis Projects &amp; Reading List</div></div>
+      <div class="card-body">
+        <div class="section-heading sq-mt0">Two thesis-sized projects</div>
+        <div class="ms-projects">
+          <div class="ms-project">
+            <div class="ms-project-title">Point-in-time correctness for restated financial data</div>
+            <p><strong>Question:</strong> how much do backtest results change when they use figures as originally filed instead of today's restated figures?</p>
+            <p><strong>Method:</strong> load SEC XBRL filings into a bitemporal schema (lesson 7). Compare a trigger-based SQLite design with PostgreSQL range types and an exclusion constraint on correctness, query speed and index size. Then run the same strategy on both views of the data.</p>
+            <p><strong>Contribution:</strong> a measured size for look-ahead bias, and a reusable schema for avoiding it.</p>
+          </div>
+          <div class="ms-project">
+            <div class="ms-project-title">Single-writer locking vs. MVCC under a real workload</div>
+            <p><strong>Question:</strong> at what write rate and transaction length does SQLite's single writer stop being enough, and how well does a queueing model predict it?</p>
+            <p><strong>Method:</strong> record a production write trace (lessons 2 and 6 show how to measure it). Replay it against SQLite with a rollback journal, SQLite in WAL mode and PostgreSQL, and compare throughput, tail latency and lock waits with the &rho;&nbsp;/&nbsp;(1&nbsp;&minus;&nbsp;&rho;) prediction.</p>
+            <p><strong>Contribution:</strong> a tested rule of thumb for when to move off SQLite, based on data instead of folklore.</p>
+          </div>
+        </div>
+
+        <div class="section-heading">Primary sources</div>
+        <ul class="ms-reading">
+          <li><a href="https://www.sqlite.org/atomiccommit.html" target="_blank" rel="noopener">Atomic Commit In SQLite</a>: the rollback journal, step by step (lesson 2).</li>
+          <li><a href="https://www.sqlite.org/lockingv3.html" target="_blank" rel="noopener">File Locking And Concurrency In SQLite Version 3</a>: the five lock states.</li>
+          <li><a href="https://www.sqlite.org/wal.html" target="_blank" rel="noopener">Write-Ahead Logging</a> and <a href="https://www.sqlite.org/isolation.html" target="_blank" rel="noopener">Isolation In SQLite</a> (lesson 3).</li>
+          <li><a href="https://www.sqlite.org/c3ref/busy_handler.html" target="_blank" rel="noopener">sqlite3_busy_handler</a>: when SQLite refuses to wait, and why.</li>
+          <li><a href="https://www.sqlite.org/fileformat2.html" target="_blank" rel="noopener">Database File Format</a>: pages, cells and B-trees, byte by byte (lesson 1).</li>
+          <li><a href="https://www.sqlite.org/queryplanner-ng.html" target="_blank" rel="noopener">The Next-Generation Query Planner</a> (lesson 4).</li>
+          <li><a href="https://www.sqlite.org/lang_with.html" target="_blank" rel="noopener">The WITH Clause</a>: recursive query semantics (lesson 5).</li>
+        </ul>
+        <div class="section-heading">Books and papers</div>
+        <ul class="ms-reading">
+          <li>Hellerstein, Stonebraker &amp; Hamilton, <em>Architecture of a Database System</em>, Foundations and Trends in Databases, 2007.</li>
+          <li>Gray &amp; Reuter, <em>Transaction Processing: Concepts and Techniques</em>, Morgan Kaufmann, 1993.</li>
+          <li>Berenson et al., &ldquo;A Critique of ANSI SQL Isolation Levels&rdquo;, SIGMOD 1995.</li>
+          <li>Graefe, <em>Modern B-Tree Techniques</em>, Foundations and Trends in Databases, 2011.</li>
+          <li>Snodgrass, <em>Developing Time-Oriented Database Applications in SQL</em>, Morgan Kaufmann, 2000.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- /tab-masters -->
+
   <!-- ══════════════════ QUIZ TAB ══════════════════ -->
   <div class="tab-content" id="tab-quiz">
 
@@ -1744,6 +2432,6 @@ CREATE TABLE users (
 
 </div><!-- /wp-main -->
 
-<script src="sqlite3-tutorial.js?v=3"></script>
+<script src="sqlite3-tutorial.js?v=4"></script>
 </body>
 </html>

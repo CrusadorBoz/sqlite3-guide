@@ -185,10 +185,28 @@ function switchOS(val) {
 }
 
 function scrollToLevel(level, btn) {
-  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+  // Each tab has its own row of level buttons; only reset the clicked row.
+  const group = btn ? btn.closest('.level-btn-group') : document;
+  group.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   const anchor = document.getElementById('level-' + level);
   if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Open the tab named by the URL hash: #northwind opens a tab, and #nw-joins
+// (any id inside a tab) opens that tab and scrolls to the element.
+function openFromHash() {
+  const id = decodeURIComponent(window.location.hash.slice(1));
+  if (!id) return;
+  if (document.getElementById('tab-' + id) && document.getElementById('tab-btn-' + id)) {
+    switchTab(id);
+    return;
+  }
+  const el = document.getElementById(id);
+  const pane = el ? el.closest('.tab-content') : null;
+  if (!pane) return;
+  switchTab(pane.id.replace('tab-', ''));
+  el.scrollIntoView({ block: 'start' });
 }
 
 function copyCode(btn) {
@@ -204,6 +222,8 @@ function copyCode(btn) {
 document.addEventListener('DOMContentLoaded', function () {
 
   buildQuiz();
+  openFromHash();
+  window.addEventListener('hashchange', openFromHash);
 
   // Tab switching — sidebar items
   document.querySelectorAll('.sidebar-item[data-tab]').forEach(function (item) {

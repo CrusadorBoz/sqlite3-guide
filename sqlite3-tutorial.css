@@ -361,3 +361,50 @@
 .sq-lesson p.ms-builds { font-size: 12.5px; color: var(--text-muted); margin: 0 0 8px; }
 .ms-builds a { color: var(--wp-blue); font-weight: 600; text-decoration: none; }
 .ms-builds a:hover { text-decoration: underline; }
+
+/* ── Northwind tab (2026-10-01) ─────────────────────────────────────────── */
+.level-nw-banner { background: linear-gradient(135deg, #0b4a5c, #13788f); }
+.level-nw-banner .level-icon { font-size: 20px; }
+.nw-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+a.nw-btn { display: inline-flex; align-items: center; text-decoration: none; }
+.nw-try { margin-top: 12px; padding: 9px 12px; background: #f0f6fc; border: 1px solid #c5d9ed; border-radius: var(--radius); font-size: 12.5px; line-height: 1.8; }
+.nw-try-label { font-weight: 600; color: var(--wp-blue-dark); margin-right: 4px; }
+.nw-try a { color: var(--wp-blue); text-decoration: none; font-weight: 500; white-space: nowrap; }
+.nw-try a:hover { text-decoration: underline; }
+.nw-try-sep { color: #a7aaad; margin: 0 2px; }
+.nw-figure { margin: 14px 0 0; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.nw-figure img { border: 1px solid var(--border); border-radius: 3px; image-rendering: pixelated; width: 172px; height: 120px; }
+.nw-figure figcaption { flex: 1; min-width: 200px; font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
+.nw-ex { border: 1px solid var(--border); border-radius: var(--radius); margin-top: 10px; background: var(--surface); }
+.nw-ex summary { cursor: pointer; padding: 10px 14px; font-size: 13.5px; font-weight: 600; list-style: none; display: flex; gap: 10px; align-items: flex-start; }
+.nw-ex summary::-webkit-details-marker { display: none; }
+.nw-ex summary::after { content: "Show answer"; margin-left: auto; flex-shrink: 0; font-size: 11.5px; font-weight: 600; color: var(--wp-blue); border: 1px solid #b3c9e3; border-radius: 10px; padding: 1px 9px; }
+.nw-ex[open] summary::after { content: "Hide answer"; }
+.nw-ex[open] summary { border-bottom: 1px solid var(--border); background: #fafafa; }
+.nw-ex-num { width: 22px; height: 22px; border-radius: 50%; background: #13788f; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.nw-ex-body { padding: 4px 14px 14px; }
+.nw-convert td { font-size: 12.5px; }
+.nw-convert .sq-mono { font-size: 12px; }
+@media (max-width: 860px) {
+  .tab-nav { overflow-x: auto; scrollbar-width: thin; }
+  .tab-btn { white-space: nowrap; flex-shrink: 0; }
+}
+
+/* ── Northwind ER diagram (same markup as the Northwind Explorer) ── */
+.nw-erd-wrap { overflow-x: auto; margin: 6px 0 4px; }
+.nw-erd { display: block; width: 100%; min-width: 760px; height: auto; font-family: 'Inter', sans-serif; }
+.nw-erd-box { fill: #ffffff; stroke: #8c8f94; stroke-width: 1; }
+.nw-erd-head { fill: #2271b1; }
+.nw-erd-title { fill: #ffffff; font-size: 11.5px; font-weight: 700; }
+.nw-erd-count { fill: #cfe3f5; font-size: 11px; }
+.nw-erd-col { fill: #1d2327; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; }
+.nw-erd-key { font-weight: 700; }
+.nw-erd-tag { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; }
+.nw-erd-tag-pk { fill: #9a6b00; }
+.nw-erd-tag-fk { fill: #2271b1; }
+.nw-erd-edge { fill: none; stroke: #787c82; stroke-width: 1.4; }
+.nw-erd-arrowhead { fill: #787c82; }
+.nw-erd-link:hover .nw-erd-box, .nw-erd-link:focus .nw-erd-box { stroke: #2271b1; stroke-width: 2; }
+.nw-erd-link:hover .nw-erd-head { fill: #135e96; }
+#tab-northwind .sq-lesson a, #tab-northwind .notice a, #tab-northwind .sq-note-t12 a { color: var(--wp-blue); }
+.nw-scroll { overflow-x: auto; }

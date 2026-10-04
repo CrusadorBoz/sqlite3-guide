@@ -23,7 +23,7 @@
      location /examples/sqlite3/sqlite3-guide/) and is NOT rendered by
      Django, so no Django template syntax may appear anywhere in it. -->
 <link rel="stylesheet" href="/static/css/fonts.css?v=2">
-<link rel="stylesheet" href="sqlite3-tutorial.css?v=11">
+<link rel="stylesheet" href="sqlite3-tutorial.css?v=12">
 <link rel="stylesheet" href="/static/css/back-button.css?v=1">
 </head>
 <body>
@@ -2604,7 +2604,137 @@ d.db: 1000</code></div>
 </a>
 </svg>
         </div>
-        <p class="sq-note-t10">Each arrow runs from a foreign key (FK) to the primary key (PK) it references, from the &ldquo;many&rdquo; side to the &ldquo;one&rdquo; side. Header numbers are row counts. Click a table to browse it in the Explorer.</p>
+        <p class="sq-note-t10">Each arrow runs from a foreign key (FK) to the primary key (PK) it references, from the &ldquo;many&rdquo; side to the &ldquo;one&rdquo; side. Header numbers are row counts. Click a table to browse it in the Explorer, or read <a href="#nw-connections">why each connection exists</a>.</p>
+      </div>
+    </div>
+
+    <div class="card" id="nw-connections">
+      <div class="card-header"><div class="card-title">How the tables connect, and why</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p>Every arrow on the diagram above is a <strong>foreign key</strong>: a column in one table that holds the primary key of a row in another table. Order 10248 has <code class="sq-mono">CustomerID = 'VINET'</code>, and that value is the entire link. Orders holds no copy of the customer's name or address, only the key, and a query uses the key to look up the rest. Each arrow starts at the column holding the key (the <em>child</em> table, the &ldquo;many&rdquo; side) and points to the table that key identifies (the <em>parent</em> table, the &ldquo;one&rdquo; side).</p>
+          <p><strong>Why split the data at all?</strong> Northwind could have been a single wide spreadsheet with one row per order line and the customer, product, supplier and salesperson typed out on every row. Each customer's address would then be repeated on every line of every order they placed. To change a phone number you'd have to find every copy, and a copy you missed would contradict the others. A new customer couldn't be recorded until they ordered something. Splitting the data into tables stores each fact once, and the foreign keys put the pieces back together when you ask a question. <a href="#nw-normal">Lesson 5</a> covers the few copies Northwind keeps on purpose.</p>
+          <p>Northwind's 13 tables are joined by 14 foreign keys. The table below groups them into four areas of the business and explains why each one exists.</p>
+        </div>
+        <div class="nw-scroll"><table class="cmd-table nw-convert nw-links">
+          <thead><tr><th>Foreign key &rarr; what it references</th><th>Kind</th><th>Why the connection exists</th></tr></thead>
+          <tbody>
+            <tr class="nw-links-group"><td colspan="3">The sale: who bought what</td></tr>
+            <tr><td><span class="cmd-code">Orders.CustomerID</span> &rarr; <span class="cmd-code">Customers.CustomerID</span></td><td>One-to-many</td><td class="desc">A customer places many orders over time, and each order belongs to exactly one customer. The order stores only the key, so the company name and address are kept once, in Customers. Two of the 91 customers have no orders yet, which is only possible because they have their own table.</td></tr>
+            <tr><td><span class="cmd-code">"Order Details".OrderID</span> &rarr; <span class="cmd-code">Orders.OrderID</span></td><td>One-to-many</td><td class="desc">An order can contain any number of products (from 1 to 25 here). That can't be a fixed set of columns on Orders, so each line is its own row that points back at its order.</td></tr>
+            <tr><td><span class="cmd-code">"Order Details".ProductID</span> &rarr; <span class="cmd-code">Products.ProductID</span></td><td>One-to-many</td><td class="desc">The same product appears on many order lines. Together with OrderID it forms the composite key (OrderID, ProductID), so a product can appear on an order only once. This makes Order Details the junction for the many-to-many between Orders and Products.</td></tr>
+            <tr><td><span class="cmd-code">Orders.EmployeeID</span> &rarr; <span class="cmd-code">Employees.EmployeeID</span></td><td>One-to-many</td><td class="desc">Records which salesperson took the order. Sales-by-employee reports follow this arrow.</td></tr>
+            <tr><td><span class="cmd-code">Orders.ShipVia</span> &rarr; <span class="cmd-code">Shippers.ShipperID</span></td><td>One-to-many</td><td class="desc">Records which of the three carriers delivers the order. The column name differs from the key it references; a foreign key needs matching values, not matching names.</td></tr>
+            <tr class="nw-links-group"><td colspan="3">The catalogue: what is sold</td></tr>
+            <tr><td><span class="cmd-code">Products.SupplierID</span> &rarr; <span class="cmd-code">Suppliers.SupplierID</span></td><td>One-to-many</td><td class="desc">Each product is bought from one supplier (77 products from 29 suppliers). The supplier's contact details are stored once, however many products they supply.</td></tr>
+            <tr><td><span class="cmd-code">Products.CategoryID</span> &rarr; <span class="cmd-code">Categories.CategoryID</span></td><td>One-to-many</td><td class="desc">Groups the products into 8 categories for menus and reports. Each category's description and picture are stored once, not repeated on every product.</td></tr>
+            <tr class="nw-links-group"><td colspan="3">The staff: who reports to whom, and where they sell</td></tr>
+            <tr><td><span class="cmd-code">Employees.ReportsTo</span> &rarr; <span class="cmd-code">Employees.EmployeeID</span></td><td>Self-reference</td><td class="desc">A manager is also an employee, so the key points back at its own table. Andrew Fuller's ReportsTo is NULL because he is at the top. See <a href="#nw-orgchart">lesson 4</a>.</td></tr>
+            <tr><td><span class="cmd-code">EmployeeTerritories.EmployeeID</span> &rarr; <span class="cmd-code">Employees.EmployeeID</span><br><span class="cmd-code">EmployeeTerritories.TerritoryID</span> &rarr; <span class="cmd-code">Territories.TerritoryID</span></td><td>Many-to-many</td><td class="desc">An employee covers several territories, and a territory may have several employees. Neither table can hold a list, so this junction table holds one row per pairing, 49 in all. Its primary key is both columns, so the same pairing can't be entered twice.</td></tr>
+            <tr><td><span class="cmd-code">Territories.RegionID</span> &rarr; <span class="cmd-code">Region.RegionID</span></td><td>One-to-many</td><td class="desc">The 53 territories roll up into 4 regions: Eastern, Western, Northern and Southern.</td></tr>
+            <tr class="nw-links-group"><td colspan="3">Customer types: designed but never filled in</td></tr>
+            <tr><td><span class="cmd-code">CustomerCustomerDemo.CustomerID</span> &rarr; <span class="cmd-code">Customers.CustomerID</span><br><span class="cmd-code">CustomerCustomerDemo.CustomerTypeID</span> &rarr; <span class="cmd-code">CustomerDemographics.CustomerTypeID</span></td><td>Many-to-many</td><td class="desc">Lets a customer carry several marketing types. It uses the same junction pattern as EmployeeTerritories. Microsoft shipped the design without any data, so both tables have 0 rows.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="sq-lesson sq-mt14">
+          <p><strong>Following a connection in SQL.</strong> To follow an arrow in a query, join the child's foreign-key column to the parent's primary key, for example <code class="sq-mono">JOIN Customers c ON c.CustomerID = o.CustomerID</code>. The query below starts at order 10248 and follows eight arrows. Its three lines repeat the same customer, employee, manager and shipper on every row, because a one-to-many join copies the &ldquo;one&rdquo; side onto each of its &ldquo;many&rdquo; rows. That repetition exists only in the query result; the database still stores each fact once.</p>
+          <p><code class="sq-mono">PRAGMA foreign_key_list</code> shows a table's connections without the diagram. <code class="sq-mono">pragma_foreign_key_check</code> lists every row that points at a key that doesn't exist; Northwind has none. SQLite enforces these links on new writes only when <code class="sq-mono">PRAGMA foreign_keys = ON</code> is set (<a href="#nw-constraints">lesson 14</a>).</p>
+          <dl class="sq-terms"><dt>Foreign key</dt><dd>A column whose values must match the primary key of a row in another table (or the same table).</dd><dt>Parent / child table</dt><dd>The parent table owns the key; the child table holds a copy of it in a foreign-key column. The arrow runs from child to parent.</dd><dt>Composite key</dt><dd>A primary key made of two or more columns, such as (OrderID, ProductID). Each junction table uses one.</dd><dt>Self-reference</dt><dd>A foreign key that points at its own table, like ReportsTo.</dd></dl>
+        </div>
+        <div class="section-heading sq-mt0">List a table's connections, then follow them</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- Ask SQLite which connections a table has</span>
+<span class="kw">PRAGMA</span> foreign_key_list(Orders);
+
+<span class="cm">-- Follow every arrow out from one order</span>
+<span class="kw">SELECT</span> c.CompanyName <span class="kw">AS</span> customer,
+       e.FirstName || <span class="str">' '</span> || e.LastName <span class="kw">AS</span> employee,
+       m.FirstName || <span class="str">' '</span> || m.LastName <span class="kw">AS</span> manager,
+       s.CompanyName <span class="kw">AS</span> shipper,
+       p.ProductName <span class="kw">AS</span> product,
+       cat.CategoryName <span class="kw">AS</span> category,
+       sup.CompanyName <span class="kw">AS</span> supplier
+<span class="kw">FROM</span> Orders o
+<span class="kw">JOIN</span> Customers c      <span class="kw">ON</span> c.CustomerID   = o.CustomerID
+<span class="kw">JOIN</span> Employees e      <span class="kw">ON</span> e.EmployeeID   = o.EmployeeID
+<span class="kw">LEFT</span> <span class="kw">JOIN</span> Employees m <span class="kw">ON</span> m.EmployeeID   = e.ReportsTo
+<span class="kw">JOIN</span> Shippers s       <span class="kw">ON</span> s.ShipperID    = o.ShipVia
+<span class="kw">JOIN</span> "Order Details" od <span class="kw">ON</span> od.OrderID   = o.OrderID
+<span class="kw">JOIN</span> Products p       <span class="kw">ON</span> p.ProductID    = od.ProductID
+<span class="kw">JOIN</span> Categories cat   <span class="kw">ON</span> cat.CategoryID = p.CategoryID
+<span class="kw">JOIN</span> Suppliers sup    <span class="kw">ON</span> sup.SupplierID = p.SupplierID
+<span class="kw">WHERE</span> o.OrderID = <span class="num">10248</span>
+<span class="kw">ORDER</span> <span class="kw">BY</span> od.ProductID;
+
+<span class="cm">-- Check that no row points at a key that does not exist</span>
+<span class="kw">SELECT</span> <span class="fn">count</span>(*) <span class="kw">AS</span> broken_links <span class="kw">FROM</span> pragma_foreign_key_check;</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">sqlite&gt;</span> .mode table
+
+<span class="r-prompt">sqlite&gt;</span> PRAGMA foreign_key_list(Orders);
+
+<span class="r-table">+----+-----+-----------+------------+------------+-----------+-----------+-------+</span>
+<span class="r-table">| id | seq |   table   |    from    |     to     | on_update | on_delete | match |</span>
+<span class="r-table">+----+-----+-----------+------------+------------+-----------+-----------+-------+</span>
+<span class="r-table">| 0  | 0   | Shippers  | ShipVia    | ShipperID  | NO ACTION | NO ACTION | NONE  |</span>
+<span class="r-table">| 1  | 0   | Employees | EmployeeID | EmployeeID | NO ACTION | NO ACTION | NONE  |</span>
+<span class="r-table">| 2  | 0   | Customers | CustomerID | CustomerID | NO ACTION | NO ACTION | NONE  |</span>
+<span class="r-table">+----+-----+-----------+------------+------------+-----------+-----------+-------+</span>
+<span class="r-prompt">sqlite&gt;</span> SELECT c.CompanyName AS customer,
+
+   ...&gt;        e.FirstName || ' ' || e.LastName AS employee,
+
+   ...&gt;        m.FirstName || ' ' || m.LastName AS manager,
+
+   ...&gt;        s.CompanyName AS shipper,
+
+   ...&gt;        p.ProductName AS product,
+
+   ...&gt;        cat.CategoryName AS category,
+
+   ...&gt;        sup.CompanyName AS supplier
+
+   ...&gt; FROM Orders o
+
+   ...&gt; JOIN Customers c      ON c.CustomerID   = o.CustomerID
+
+   ...&gt; JOIN Employees e      ON e.EmployeeID   = o.EmployeeID
+
+   ...&gt; LEFT JOIN Employees m ON m.EmployeeID   = e.ReportsTo
+
+   ...&gt; JOIN Shippers s       ON s.ShipperID    = o.ShipVia
+
+   ...&gt; JOIN "Order Details" od ON od.OrderID   = o.OrderID
+
+   ...&gt; JOIN Products p       ON p.ProductID    = od.ProductID
+
+   ...&gt; JOIN Categories cat   ON cat.CategoryID = p.CategoryID
+
+   ...&gt; JOIN Suppliers sup    ON sup.SupplierID = p.SupplierID
+
+   ...&gt; WHERE o.OrderID = 10248
+
+   ...&gt; ORDER BY od.ProductID;
+
+<span class="r-table">+---------------------------+-----------------+---------------+------------------+-------------------------------+----------------+------------------------------------+</span>
+<span class="r-table">|         customer          |    employee     |    manager    |     shipper      |            product            |    category    |              supplier              |</span>
+<span class="r-table">+---------------------------+-----------------+---------------+------------------+-------------------------------+----------------+------------------------------------+</span>
+<span class="r-table">| Vins et alcools Chevalier | Steven Buchanan | Andrew Fuller | Federal Shipping | Queso Cabrales                | Dairy Products | Cooperativa de Quesos 'Las Cabras' |</span>
+<span class="r-table">| Vins et alcools Chevalier | Steven Buchanan | Andrew Fuller | Federal Shipping | Singaporean Hokkien Fried Mee | Grains/Cereals | Leka Trading                       |</span>
+<span class="r-table">| Vins et alcools Chevalier | Steven Buchanan | Andrew Fuller | Federal Shipping | Mozzarella di Giovanni        | Dairy Products | Formaggi Fortini s.r.l.            |</span>
+<span class="r-table">+---------------------------+-----------------+---------------+------------------+-------------------------------+----------------+------------------------------------+</span>
+<span class="r-prompt">sqlite&gt;</span> SELECT count(*) AS broken_links FROM pragma_foreign_key_check;
+
+<span class="r-table">+--------------+</span>
+<span class="r-table">| broken_links |</span>
+<span class="r-table">+--------------+</span>
+<span class="r-table">| 0            |</span>
+<span class="r-table">+--------------+</span></code></div>
+        </div>
+        <div class="nw-try"><span class="nw-try-label">Run it in the read-only Explorer:</span> <a href="/examples/sqlite3/northwind/sql/?q=PRAGMA+foreign_key_list%28Orders%29%3B">Connections of Orders</a> <span class="nw-try-sep">&middot;</span> <a href="/examples/sqlite3/northwind/sql/?q=SELECT+c.CompanyName+AS+customer%2C%0A+++++++e.FirstName+%7C%7C+%27+%27+%7C%7C+e.LastName+AS+employee%2C%0A+++++++m.FirstName+%7C%7C+%27+%27+%7C%7C+m.LastName+AS+manager%2C%0A+++++++s.CompanyName+AS+shipper%2C%0A+++++++p.ProductName+AS+product%2C%0A+++++++cat.CategoryName+AS+category%2C%0A+++++++sup.CompanyName+AS+supplier%0AFROM+Orders+o%0AJOIN+Customers+c++++++ON+c.CustomerID+++%3D+o.CustomerID%0AJOIN+Employees+e++++++ON+e.EmployeeID+++%3D+o.EmployeeID%0ALEFT+JOIN+Employees+m+ON+m.EmployeeID+++%3D+e.ReportsTo%0AJOIN+Shippers+s+++++++ON+s.ShipperID++++%3D+o.ShipVia%0AJOIN+%22Order+Details%22+od+ON+od.OrderID+++%3D+o.OrderID%0AJOIN+Products+p+++++++ON+p.ProductID++++%3D+od.ProductID%0AJOIN+Categories+cat+++ON+cat.CategoryID+%3D+p.CategoryID%0AJOIN+Suppliers+sup++++ON+sup.SupplierID+%3D+p.SupplierID%0AWHERE+o.OrderID+%3D+10248%0AORDER+BY+od.ProductID%3B">Order 10248 across eight tables</a></div>
       </div>
     </div>
 

@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SQLite3 — Complete Guide</title>
 <link rel="canonical" href="https://bozcode.com/examples/sqlite3/sqlite3-guide/sqlite3-tutorial.html">
-<meta name="description" content="A complete SQLite3 tutorial — installation, core commands, schema design, queries, Master's-level internals (locking, isolation, query planning, durability, bitemporal data), Microsoft's Northwind sample database lesson by lesson, and a knowledge quiz. Hands-on guide with downloadable practice databases.">
+<meta name="description" content="A complete SQLite3 tutorial — installation, core commands, schema design, queries, Master's-level internals (foreign keys, locking, isolation, query planning, durability, bitemporal data), Microsoft's Northwind sample database lesson by lesson, and a knowledge quiz. Hands-on guide with downloadable practice databases.">
 <meta property="og:site_name" content="BozCode.com">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://bozcode.com/examples/sqlite3/sqlite3-guide/sqlite3-tutorial.html">
 <meta property="og:title" content="SQLite3 — Complete Guide">
-<meta property="og:description" content="A complete SQLite3 tutorial — installation, core commands, schema design, queries, Master's-level internals (locking, isolation, query planning, durability, bitemporal data), Microsoft's Northwind sample database lesson by lesson, and a knowledge quiz. Hands-on guide with downloadable practice databases.">
+<meta property="og:description" content="A complete SQLite3 tutorial — installation, core commands, schema design, queries, Master's-level internals (foreign keys, locking, isolation, query planning, durability, bitemporal data), Microsoft's Northwind sample database lesson by lesson, and a knowledge quiz. Hands-on guide with downloadable practice databases.">
 <meta property="og:image" content="https://bozcode.com/static/images/og-default.png?v=1">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -881,7 +881,7 @@ CREATE TABLE users (
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="basics-joins">
       <div class="card-header"><div class="card-title">Joining Tables</div></div>
       <div class="card-body">
         <p class="sq-lede">JOINs combine rows from two or more tables based on a related column. Set up two tables first:</p>
@@ -1726,14 +1726,278 @@ CREATE TABLE users (
       <span class="level-icon">🎓</span>
       <div>
         <div class="sq-h">Master's Degree</div>
-        <div class="sq-tiny">How SQLite works inside: storage, locking, isolation, planning, recursion, durability and time</div>
+        <div class="sq-tiny">How SQLite works inside: integrity, storage, locking, isolation, planning, recursion, durability and time</div>
       </div>
     </div>
 
-    <div class="notice notice-info">Graduate-level material. Each lesson explains one part of how a database works inside and then shows it happening. Every Terminal Output block is real, captured from sqlite3 3.45.1 on this site's server. Where a lesson uses two terminal windows at once, <strong>[A]</strong> and <strong>[B]</strong> mark which window each line was typed in.</div>
+    <div class="notice notice-info">Graduate-level material. Each lesson explains one part of how a database works inside and then shows it happening. Every Terminal Output block is real, captured on this site's server: lesson 1 from sqlite3 3.46.1, the rest from 3.45.1. Where a lesson uses two terminal windows at once, <strong>[A]</strong> and <strong>[B]</strong> mark which window each line was typed in.</div>
+
+    <div class="card" id="ms-integrity">
+      <div class="card-header"><div class="card-title">1 · Relational Integrity: Foreign Keys, Cascades and Normal Forms</div></div>
+      <div class="card-body">
+        <div class="sq-lesson">
+          <p class="ms-builds">Builds on <a href="#basics-joins" class="ms-goto" data-goto="basics-joins">Basics &amp; Commands &rsaquo; Joining Tables</a></p>
+          <p>Basics declared <code class="sq-mono">dept_id INTEGER REFERENCES departments(id)</code> and joined on it. A declaration like that is a promise, and this lesson is about who keeps it. The relational model (Codd, 1970) requires <strong>referential integrity</strong>: every foreign-key value must match a key in the parent table or be NULL. A row that breaks the rule is an <strong>orphan</strong>, and every join that touches it silently gives the wrong answer.</p>
+          <p>SQLite does not check this by default. Foreign-key enforcement arrived in version 3.6.19 (2009), and turning it on for everyone would have broken existing databases that already held orphans, so it stays off for backward compatibility. <code class="sq-mono">PRAGMA foreign_keys = ON</code> applies only to the connection that runs it, has to be repeated on every new connection, and is silently ignored inside a transaction. In the session below, Dave joins department 99, which doesn't exist, without complaint. <code class="sq-mono">PRAGMA foreign_key_check</code> finds him afterwards. With enforcement on, the same insert fails with error 19 (SQLITE_CONSTRAINT). Django runs <code class="sq-mono">PRAGMA foreign_keys = ON</code> on every SQLite connection it opens, so a Django project is protected even though the sqlite3 shell isn't.</p>
+          <p><strong>Referential actions</strong> decide what happens to the children when a parent row is deleted or its key changes. <code class="sq-mono">NO ACTION</code>, the default, refuses the change if children would be left behind. <code class="sq-mono">RESTRICT</code> also refuses, but checks at once, even when the constraint is deferred. <code class="sq-mono">CASCADE</code> deletes or updates the children too, and <code class="sq-mono">SET NULL</code> / <code class="sq-mono">SET DEFAULT</code> detach them. Pick the action by what the link means. Use CASCADE when the child can't exist without its parent (an order line without its order), SET NULL when the link is optional (an employee whose manager leaves), and NO ACTION when deleting the parent would destroy history (a customer with orders). Below, deleting Marketing takes Bob with it, and deleting Alice clears Carol's <code class="sq-mono">manager_id</code>. Northwind uses NO ACTION everywhere, which is why you can't delete a customer who has orders.</p>
+          <p><strong>When the check runs</strong> matters as much as whether it runs. An ordinary (<em>immediate</em>) constraint is checked at the end of each statement, not after each row, so one multi-row INSERT may add a child before its parent. <code class="sq-mono">DEFERRABLE INITIALLY DEFERRED</code> moves the check to COMMIT, which is what cycles and self-references need when rows arrive in any order. If violations remain at COMMIT, <strong>the COMMIT fails and the transaction stays open</strong>. The session shows Eve's row still visible after the failed COMMIT, until ROLLBACK removes it. Code that assumes a failed COMMIT ended the transaction carries on inside it. <code class="sq-mono">PRAGMA defer_foreign_keys = ON</code> defers every constraint for the current transaction and switches itself off at COMMIT. That is how <a href="#nw-get">northwind.db</a> is loaded, because <code class="sq-mono">Employees.ReportsTo</code> refers to employees inserted later.</p>
+          <dl class="sq-terms">
+            <dt>Referential integrity</dt><dd>Every foreign-key value matches a parent key or is NULL. A row that breaks it is an orphan.</dd>
+            <dt>Referential action</dt><dd>What a delete or key update on the parent does to the children: NO ACTION, RESTRICT, CASCADE, SET NULL or SET DEFAULT.</dd>
+            <dt>Deferred constraint</dt><dd>A constraint checked at COMMIT instead of at the end of each statement.</dd>
+            <dt>SQLITE_CONSTRAINT (19)</dt><dd>The error for any constraint failure. The shell prints &ldquo;FOREIGN KEY constraint failed (19)&rdquo;.</dd>
+          </dl>
+        </div>
+        <div class="section-heading sq-mt0">Enforcement, cascades and deferred checks</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- The Basics schema, now with referential actions</span>
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> departments (id <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>, name <span class="kw">TEXT</span> <span class="kw">NOT</span> <span class="kw">NULL</span>);
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> employees (
+  id         <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,
+  name       <span class="kw">TEXT</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,
+  dept_id    <span class="kw">INTEGER</span> <span class="kw">REFERENCES</span> departments(id) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,
+  manager_id <span class="kw">INTEGER</span> <span class="kw">REFERENCES</span> employees(id)   <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">SET</span> <span class="kw">NULL</span>
+);
+<span class="kw">INSERT</span> <span class="kw">INTO</span> departments <span class="kw">VALUES</span> (<span class="num">1</span>, <span class="str">&#x27;Engineering&#x27;</span>), (<span class="num">2</span>, <span class="str">&#x27;Marketing&#x27;</span>);
+<span class="kw">INSERT</span> <span class="kw">INTO</span> employees <span class="kw">VALUES</span> (<span class="num">1</span>, <span class="str">&#x27;Alice&#x27;</span>, <span class="num">1</span>, <span class="kw">NULL</span>), (<span class="num">2</span>, <span class="str">&#x27;Bob&#x27;</span>, <span class="num">2</span>, <span class="num">1</span>), (<span class="num">3</span>, <span class="str">&#x27;Carol&#x27;</span>, <span class="num">1</span>, <span class="num">1</span>);
+
+<span class="cm">-- Enforcement is off by default: an orphan goes straight in</span>
+<span class="kw">PRAGMA</span> foreign_keys;
+<span class="kw">INSERT</span> <span class="kw">INTO</span> employees <span class="kw">VALUES</span> (<span class="num">4</span>, <span class="str">&#x27;Dave&#x27;</span>, <span class="num">99</span>, <span class="kw">NULL</span>);
+<span class="kw">PRAGMA</span> foreign_key_check;
+<span class="kw">DELETE</span> <span class="kw">FROM</span> employees <span class="kw">WHERE</span> id = 4;
+
+<span class="cm">-- Turn it on (per connection, outside any transaction): the same insert now fails</span>
+<span class="kw">PRAGMA</span> foreign_keys = <span class="kw">ON</span>;
+<span class="kw">INSERT</span> <span class="kw">INTO</span> employees <span class="kw">VALUES</span> (<span class="num">4</span>, <span class="str">&#x27;Dave&#x27;</span>, <span class="num">99</span>, <span class="kw">NULL</span>);
+
+<span class="cm">-- CASCADE removes Bob; SET NULL clears Carol&#x27;s manager</span>
+<span class="kw">DELETE</span> <span class="kw">FROM</span> departments <span class="kw">WHERE</span> id = 2;
+<span class="kw">DELETE</span> <span class="kw">FROM</span> employees <span class="kw">WHERE</span> id = 1;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> employees;
+
+<span class="cm">-- A deferred self-reference: checked at COMMIT, not per statement</span>
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> staff (
+  id         <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,
+  name       <span class="kw">TEXT</span>,
+  manager_id <span class="kw">INTEGER</span> <span class="kw">REFERENCES</span> staff(id) <span class="kw">DEFERRABLE</span> <span class="kw">INITIALLY</span> <span class="kw">DEFERRED</span>
+);
+<span class="kw">BEGIN</span>;
+<span class="kw">INSERT</span> <span class="kw">INTO</span> staff <span class="kw">VALUES</span> (<span class="num">2</span>, <span class="str">&#x27;Bob&#x27;</span>, <span class="num">1</span>);
+<span class="kw">INSERT</span> <span class="kw">INTO</span> staff <span class="kw">VALUES</span> (<span class="num">1</span>, <span class="str">&#x27;Alice&#x27;</span>, <span class="kw">NULL</span>);
+<span class="kw">COMMIT</span>;
+
+<span class="cm">-- A failed COMMIT leaves the transaction open</span>
+<span class="kw">BEGIN</span>;
+<span class="kw">INSERT</span> <span class="kw">INTO</span> staff <span class="kw">VALUES</span> (<span class="num">3</span>, <span class="str">&#x27;Eve&#x27;</span>, <span class="num">42</span>);
+<span class="kw">COMMIT</span>;
+<span class="kw">SELECT</span> <span class="fn">count</span>(*) <span class="kw">AS</span> rows_in_txn <span class="kw">FROM</span> staff;
+<span class="kw">ROLLBACK</span>;
+<span class="kw">SELECT</span> <span class="fn">count</span>(*) <span class="kw">AS</span> rows_after <span class="kw">FROM</span> staff;</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">sqlite&gt;</span> .mode table
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE departments (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE employees (
+<span class="r-table"></span>
+(x1...&gt;   id         INTEGER PRIMARY KEY,
+<span class="r-table"></span>
+(x1...&gt;   name       TEXT NOT NULL,
+<span class="r-table"></span>
+(x1...&gt;   dept_id    INTEGER REFERENCES departments(id) ON DELETE CASCADE,
+<span class="r-table"></span>
+(x1...&gt;   manager_id INTEGER REFERENCES employees(id)   ON DELETE SET NULL
+<span class="r-table"></span>
+(x1...&gt; );
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO departments VALUES (1, &#x27;Engineering&#x27;), (2, &#x27;Marketing&#x27;);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO employees VALUES (1, &#x27;Alice&#x27;, 1, NULL), (2, &#x27;Bob&#x27;, 2, 1), (3, &#x27;Carol&#x27;, 1, 1);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> PRAGMA foreign_keys;
+<span class="r-table"></span>
+<span class="r-table">+--------------+</span>
+<span class="r-table">| foreign_keys |</span>
+<span class="r-table">+--------------+</span>
+<span class="r-table">| 0            |</span>
+<span class="r-table">+--------------+</span>
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO employees VALUES (4, &#x27;Dave&#x27;, 99, NULL);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> PRAGMA foreign_key_check;
+<span class="r-table"></span>
+<span class="r-table">+-----------+-------+-------------+------+</span>
+<span class="r-table">|   table   | rowid |   parent    | fkid |</span>
+<span class="r-table">+-----------+-------+-------------+------+</span>
+<span class="r-table">| employees | 4     | departments | 1    |</span>
+<span class="r-table">+-----------+-------+-------------+------+</span>
+<span class="r-prompt">sqlite&gt;</span> DELETE FROM employees WHERE id = 4;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> PRAGMA foreign_keys = ON;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO employees VALUES (4, &#x27;Dave&#x27;, 99, NULL);
+<span class="r-table"></span>
+Runtime error: FOREIGN KEY constraint failed (19)
+<span class="r-prompt">sqlite&gt;</span> DELETE FROM departments WHERE id = 2;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> DELETE FROM employees WHERE id = 1;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> SELECT * FROM employees;
+<span class="r-table"></span>
+<span class="r-table">+----+-------+---------+------------+</span>
+<span class="r-table">| id | name  | dept_id | manager_id |</span>
+<span class="r-table">+----+-------+---------+------------+</span>
+<span class="r-table">| 3  | Carol | 1       |            |</span>
+<span class="r-table">+----+-------+---------+------------+</span>
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE staff (
+<span class="r-table"></span>
+(x1...&gt;   id         INTEGER PRIMARY KEY,
+<span class="r-table"></span>
+(x1...&gt;   name       TEXT,
+<span class="r-table"></span>
+(x1...&gt;   manager_id INTEGER REFERENCES staff(id) DEFERRABLE INITIALLY DEFERRED
+<span class="r-table"></span>
+(x1...&gt; );
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> BEGIN;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO staff VALUES (2, &#x27;Bob&#x27;, 1);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO staff VALUES (1, &#x27;Alice&#x27;, NULL);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> COMMIT;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> BEGIN;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> INSERT INTO staff VALUES (3, &#x27;Eve&#x27;, 42);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> COMMIT;
+<span class="r-table"></span>
+Runtime error: FOREIGN KEY constraint failed (19)
+<span class="r-prompt">sqlite&gt;</span> SELECT count(*) AS rows_in_txn FROM staff;
+<span class="r-table"></span>
+<span class="r-table">+-------------+</span>
+<span class="r-table">| rows_in_txn |</span>
+<span class="r-table">+-------------+</span>
+<span class="r-table">| 3           |</span>
+<span class="r-table">+-------------+</span>
+<span class="r-prompt">sqlite&gt;</span> ROLLBACK;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> SELECT count(*) AS rows_after FROM staff;
+<span class="r-table"></span>
+<span class="r-table">+------------+</span>
+<span class="r-table">| rows_after |</span>
+<span class="r-table">+------------+</span>
+<span class="r-table">| 2          |</span>
+<span class="r-table">+------------+</span></code></div>
+        </div>
+        <div class="sq-lesson sq-mt14">
+          <p><strong>The missing index on the child side.</strong> The parent key must be a PRIMARY KEY or UNIQUE column, so it always has an index; if it isn't, every write fails with &ldquo;foreign key mismatch&rdquo;. SQLite never indexes the <em>child</em> column for you. Each time a parent row is deleted, or its key changes, SQLite has to find that row's children, and without an index that means reading the whole child table. In the session below, 1,000 customers who have no orders are deleted. Each delete scans all 200,000 orders, 200 million row visits in all, and takes 8.0&nbsp;seconds. The shell's <code class="sq-mono">.lint fkey-indexes</code> names the missing index. With it in place, the same 1,000 deletes take 0.001&nbsp;seconds.</p>
+          <p>The cost only appears once enforcement is on, so switching <code class="sq-mono">foreign_keys</code> on in an older database can make deletes suddenly slow for no visible reason. Django creates an index on every <code class="sq-mono">ForeignKey</code> column by default, partly for this reason and partly because joins use the same column.</p>
+        </div>
+        <div class="section-heading sq-mt0">Delete parents with and without a child-side index</div>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- 2,000 customers; 200,000 orders that belong to customers 1-1,000</span>
+<span class="kw">PRAGMA</span> foreign_keys = <span class="kw">ON</span>;
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> customers (id <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>, name <span class="kw">TEXT</span>);
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> orders (
+  id          <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,
+  customer_id <span class="kw">INTEGER</span> <span class="kw">REFERENCES</span> customers(id),
+  total       <span class="kw">REAL</span>
+);
+<span class="kw">WITH</span> <span class="kw">RECURSIVE</span> n(i) <span class="kw">AS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">UNION</span> <span class="kw">ALL</span> <span class="kw">SELECT</span> i + <span class="num">1</span> <span class="kw">FROM</span> n <span class="kw">WHERE</span> i &lt; <span class="num">2000</span>)
+<span class="kw">INSERT</span> <span class="kw">INTO</span> customers <span class="kw">SELECT</span> i, <span class="str">&#x27;customer &#x27;</span> || i <span class="kw">FROM</span> n;
+<span class="kw">WITH</span> <span class="kw">RECURSIVE</span> n(i) <span class="kw">AS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">UNION</span> <span class="kw">ALL</span> <span class="kw">SELECT</span> i + <span class="num">1</span> <span class="kw">FROM</span> n <span class="kw">WHERE</span> i &lt; <span class="num">200000</span>)
+<span class="kw">INSERT</span> <span class="kw">INTO</span> orders <span class="kw">SELECT</span> i, i % <span class="num">1000</span> + <span class="num">1</span>, i * <span class="num">0.5</span> <span class="kw">FROM</span> n;
+
+<span class="cm">-- Delete the 1,000 customers who have no orders</span>
+.timer on
+<span class="kw">DELETE</span> <span class="kw">FROM</span> customers <span class="kw">WHERE</span> id &gt; 1000;
+.timer off
+
+<span class="cm">-- Ask the shell which foreign keys have no index</span>
+.lint fkey-indexes
+
+<span class="cm">-- Add the index, put the customers back, and delete them again</span>
+<span class="kw">CREATE</span> <span class="kw">INDEX</span> orders_customer_id <span class="kw">ON</span> orders(customer_id);
+<span class="kw">WITH</span> <span class="kw">RECURSIVE</span> n(i) <span class="kw">AS</span> (<span class="kw">SELECT</span> <span class="num">1001</span> <span class="kw">UNION</span> <span class="kw">ALL</span> <span class="kw">SELECT</span> i + <span class="num">1</span> <span class="kw">FROM</span> n <span class="kw">WHERE</span> i &lt; <span class="num">2000</span>)
+<span class="kw">INSERT</span> <span class="kw">INTO</span> customers <span class="kw">SELECT</span> i, <span class="str">&#x27;customer &#x27;</span> || i <span class="kw">FROM</span> n;
+.timer on
+<span class="kw">DELETE</span> <span class="kw">FROM</span> customers <span class="kw">WHERE</span> id &gt; 1000;
+.timer off</code></div>
+<div class="result-block sq-mt14">
+          <div class="result-bar">
+            <div class="result-dots"><span></span><span></span><span></span></div>
+            <div class="result-title">Terminal Output</div>
+          </div>
+          <div class="result-body"><code class="result-code"><span class="r-prompt">sqlite&gt;</span> .mode table
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> PRAGMA foreign_keys = ON;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> CREATE TABLE orders (
+<span class="r-table"></span>
+(x1...&gt;   id          INTEGER PRIMARY KEY,
+<span class="r-table"></span>
+(x1...&gt;   customer_id INTEGER REFERENCES customers(id),
+<span class="r-table"></span>
+(x1...&gt;   total       REAL
+<span class="r-table"></span>
+(x1...&gt; );
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i &lt; 2000)
+<span class="r-table"></span>
+   ...&gt; INSERT INTO customers SELECT i, &#x27;customer &#x27; || i FROM n;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i &lt; 200000)
+<span class="r-table"></span>
+   ...&gt; INSERT INTO orders SELECT i, i % 1000 + 1, i * 0.5 FROM n;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> .timer on
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> DELETE FROM customers WHERE id &gt; 1000;
+<span class="r-table"></span>
+Run Time: real 8.004 user 6.782335 sys 1.221208
+<span class="r-prompt">sqlite&gt;</span> .timer off
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> .lint fkey-indexes
+<span class="r-table"></span>
+CREATE INDEX &#x27;orders_customer_id&#x27; ON &#x27;orders&#x27;(&#x27;customer_id&#x27;); --&gt; customers(id)
+<span class="r-prompt">sqlite&gt;</span> CREATE INDEX orders_customer_id ON orders(customer_id);
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> WITH RECURSIVE n(i) AS (SELECT 1001 UNION ALL SELECT i + 1 FROM n WHERE i &lt; 2000)
+<span class="r-table"></span>
+   ...&gt; INSERT INTO customers SELECT i, &#x27;customer &#x27; || i FROM n;
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> .timer on
+<span class="r-table"></span>
+<span class="r-prompt">sqlite&gt;</span> DELETE FROM customers WHERE id &gt; 1000;
+<span class="r-table"></span>
+Run Time: real 0.001 user 0.000660 sys 0.000118
+<span class="r-prompt">sqlite&gt;</span> .timer off
+<span class="r-table"></span></code></div>
+        </div>
+        <div class="sq-lesson sq-mt14">
+          <p><strong>Normal forms: where a foreign key belongs.</strong> Normalisation is the design theory behind the decision to split a table and link the parts with a key. Each normal form removes one kind of repeated fact:</p>
+          <p><strong>First normal form (1NF):</strong> every column holds a single value. A comma-separated list of territories in an employee row breaks it, and that is why Northwind has the <code class="sq-mono">EmployeeTerritories</code> junction table.<br>
+          <strong>Second normal form (2NF):</strong> in a table with a composite key, no column depends on only part of the key. A <code class="sq-mono">ProductName</code> column in Order Details would depend on <code class="sq-mono">ProductID</code> alone, so it belongs in Products.<br>
+          <strong>Third normal form (3NF):</strong> no column depends on another non-key column. A department name stored next to <code class="sq-mono">dept_id</code> on every employee depends on the department, not the employee; this is the Basics example.<br>
+          <strong>Boyce&ndash;Codd normal form (BCNF):</strong> a stricter 3NF for tables with several overlapping candidate keys. Most 3NF designs already meet it.</p>
+          <p>Storing a value twice is fine when it's a deliberate decision rather than an accident. Northwind's Order Details stores its own <code class="sq-mono">UnitPrice</code>, and on 658 of its 2,155 order lines that price differs from the product's current price. That column is not a copy. It records a different fact, the price on the day of the sale (<a href="#nw-normal">Northwind lesson 5</a>). Lesson 8 handles the general version of that problem: facts that change over time.</p>
+          <dl class="sq-terms">
+            <dt>Normal form</dt><dd>A rule that removes one kind of redundancy. Each one (1NF, 2NF, 3NF, BCNF) includes the ones before it.</dd>
+            <dt>Functional dependency</dt><dd>Column B depends on column A when each value of A fixes exactly one value of B, as a department ID fixes the department name.</dd>
+            <dt>Denormalisation</dt><dd>Storing a fact more than once on purpose, usually for speed or to record the value at a point in time.</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
 
     <div class="card">
-      <div class="card-header"><div class="card-title">1 · Pages, B-trees and the File Format</div></div>
+      <div class="card-header"><div class="card-title">2 · Pages, B-trees and the File Format</div></div>
       <div class="card-body">
         <div class="sq-lesson">
           <p>Everything in an SQLite database lives in fixed-size <strong>pages</strong>, 4,096 bytes by default. Page 1 starts with a 100-byte header; after that, every table and every index is its own <strong>B-tree</strong> made of pages. <code class="sq-mono">dbstat</code> is a built-in virtual table that shows those pages directly, so the storage layout stops being theory and becomes something you can query.</p>
@@ -1747,7 +2011,7 @@ CREATE TABLE users (
           </dl>
         </div>
         <div class="section-heading sq-mt0">Build a table and look at its pages</div>
-<div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- 10,000 rows, generated with a recursive CTE (lesson 5)</span>
+<div class="code-block"><button class="copy-btn">Copy</button><code><span class="cm">-- 10,000 rows, generated with a recursive CTE (lesson 6)</span>
 <span class="kw">CREATE</span> <span class="kw">TABLE</span> people (id <span class="kw">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>, name <span class="kw">TEXT</span>, email <span class="kw">TEXT</span>);
 <span class="kw">WITH</span> <span class="kw">RECURSIVE</span> n(i) <span class="kw">AS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">UNION</span> <span class="kw">ALL</span> <span class="kw">SELECT</span> i + <span class="num">1</span> <span class="kw">FROM</span> n <span class="kw">WHERE</span> i &lt; <span class="num">10000</span>)
 <span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">SELECT</span> i, <span class="str">&#x27;user&#x27;</span> || i, <span class="str">&#x27;user&#x27;</span> || i || <span class="str">&#x27;@example.com&#x27;</span> <span class="kw">FROM</span> n;
@@ -1813,7 +2077,7 @@ CREATE TABLE users (
     </div>
 
     <div class="card">
-      <div class="card-header"><div class="card-title">2 · Atomic Commit, Journals and Locks</div></div>
+      <div class="card-header"><div class="card-title">3 · Atomic Commit, Journals and Locks</div></div>
       <div class="card-body">
         <div class="sq-lesson">
           <p>By default SQLite runs in <strong>rollback-journal</strong> mode (<code class="sq-mono">journal_mode = delete</code>). Before changing a page in the database file, it copies the original page into a separate <code class="sq-mono">-journal</code> file. If the power fails halfway through a commit, the next connection finds the journal and copies the old pages back. That is how a single file gets <strong>atomic</strong> commits without a server.</p>
@@ -1878,12 +2142,12 @@ CREATE TABLE users (
 <span class="r-table">+-------+---------+</span></code></div>
         </div>
         <div class="section-heading">Case study: measuring the lock on a live server</div>
-        <p class="sq-note-lh">This site runs on SQLite in rollback-journal mode. Watching for the <code class="sq-mono">-journal</code> file of its main database every 0.67&nbsp;ms for ten minutes (2026-09-25, early morning) found 7 write transactions. The median lock was held for 3.1&nbsp;ms and the longest for 5.5&nbsp;ms, so the lock was busy <strong>0.004%</strong> of the time. Even at 4&nbsp;ms per commit, one writer can manage about 240 commits a second (lesson 6), so an average load like this is far below the limit. The &ldquo;database is locked&rdquo; errors the site did have came from somewhere else: the trap in the next lesson.</p>
+        <p class="sq-note-lh">This site runs on SQLite in rollback-journal mode. Watching for the <code class="sq-mono">-journal</code> file of its main database every 0.67&nbsp;ms for ten minutes (2026-09-25, early morning) found 7 write transactions. The median lock was held for 3.1&nbsp;ms and the longest for 5.5&nbsp;ms, so the lock was busy <strong>0.004%</strong> of the time. Even at 4&nbsp;ms per commit, one writer can manage about 240 commits a second (lesson 7), so an average load like this is far below the limit. The &ldquo;database is locked&rdquo; errors the site did have came from somewhere else: the trap in the next lesson.</p>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header"><div class="card-title">3 · Isolation, Snapshots and the Lock-Upgrade Trap</div></div>
+      <div class="card-header"><div class="card-title">4 · Isolation, Snapshots and the Lock-Upgrade Trap</div></div>
       <div class="card-body">
         <div class="sq-lesson">
           <p class="ms-builds">Builds on <a href="#basics-pragma" class="ms-goto" data-goto="basics-pragma">Basics &amp; Commands &rsaquo; PRAGMA (WAL mode)</a></p>
@@ -1981,7 +2245,7 @@ CREATE TABLE users (
     </div>
 
     <div class="card">
-      <div class="card-header"><div class="card-title">4 · The Query Planner and Cost-Based Optimisation</div></div>
+      <div class="card-header"><div class="card-title">5 · The Query Planner and Cost-Based Optimisation</div></div>
       <div class="card-body">
         <div class="sq-lesson">
           <p class="ms-builds">Builds on <a href="#basics-indexes" class="ms-goto" data-goto="basics-indexes">Basics &amp; Commands &rsaquo; Indexes</a></p>
@@ -2064,7 +2328,7 @@ CREATE TABLE users (
     </div>
 
     <div class="card">
-      <div class="card-header"><div class="card-title">5 · Recursive Queries, Graphs and Fixed Points</div></div>
+      <div class="card-header"><div class="card-title">6 · Recursive Queries, Graphs and Fixed Points</div></div>
       <div class="card-body">
         <div class="sq-lesson">
           <p class="ms-builds">Builds on <a href="#basics-ctes" class="ms-goto" data-goto="basics-ctes">Basics &amp; Commands &rsaquo; CTEs</a></p>
@@ -2170,7 +2434,7 @@ CREATE TABLE users (
     </div>
 
     <div class="card">
-      <div class="card-header"><div class="card-title">6 · Durability and the Cost of fsync</div></div>
+      <div class="card-header"><div class="card-title">7 · Durability and the Cost of fsync</div></div>
       <div class="card-body">
         <div class="sq-lesson">
           <p class="ms-builds">Builds on <a href="#basics-transactions" class="ms-goto" data-goto="basics-transactions">Basics &amp; Commands &rsaquo; Transactions</a></p>
@@ -2244,7 +2508,7 @@ d.db: 1000</code></div>
     </div>
 
     <div class="card">
-      <div class="card-header"><div class="card-title">7 · Bitemporal Data: What Was True, and When We Knew It</div></div>
+      <div class="card-header"><div class="card-title">8 · Bitemporal Data: What Was True, and When We Knew It</div></div>
       <div class="card-body">
         <div class="sq-lesson">
           <p>Most tables store only the current value. A <strong>bitemporal</strong> table stores two separate timelines. <strong>Valid time</strong> is when a fact is true in the world: here, the fiscal year the revenue belongs to. <strong>Transaction time</strong> is when the database believed it: from <code class="sq-mono">recorded_at</code> until <code class="sq-mono">replaced_at</code>. When a company restates last year's revenue, you don't overwrite the old figure. You close its transaction-time period and add a new row. Nothing is ever lost, and the database can answer &ldquo;what did we know on 30 June 2025?&rdquo; as easily as &ldquo;what do we know now?&rdquo;</p>
@@ -2367,29 +2631,31 @@ d.db: 1000</code></div>
           <div class="ms-project">
             <div class="ms-project-title">Point-in-time correctness for restated financial data</div>
             <p><strong>Question:</strong> how much do backtest results change when they use figures as originally filed instead of today's restated figures?</p>
-            <p><strong>Method:</strong> load SEC XBRL filings into a bitemporal schema (lesson 7). Compare a trigger-based SQLite design with PostgreSQL range types and an exclusion constraint on correctness, query speed and index size. Then run the same strategy on both views of the data.</p>
+            <p><strong>Method:</strong> load SEC XBRL filings into a bitemporal schema (lesson 8). Compare a trigger-based SQLite design with PostgreSQL range types and an exclusion constraint on correctness, query speed and index size. Then run the same strategy on both views of the data.</p>
             <p><strong>Contribution:</strong> a measured size for look-ahead bias, and a reusable schema for avoiding it.</p>
           </div>
           <div class="ms-project">
             <div class="ms-project-title">Single-writer locking vs. MVCC under a real workload</div>
             <p><strong>Question:</strong> at what write rate and transaction length does SQLite's single writer stop being enough, and how well does a queueing model predict it?</p>
-            <p><strong>Method:</strong> record a production write trace (lessons 2 and 6 show how to measure it). Replay it against SQLite with a rollback journal, SQLite in WAL mode and PostgreSQL, and compare throughput, tail latency and lock waits with the &rho;&nbsp;/&nbsp;(1&nbsp;&minus;&nbsp;&rho;) prediction.</p>
+            <p><strong>Method:</strong> record a production write trace (lessons 3 and 7 show how to measure it). Replay it against SQLite with a rollback journal, SQLite in WAL mode and PostgreSQL, and compare throughput, tail latency and lock waits with the &rho;&nbsp;/&nbsp;(1&nbsp;&minus;&nbsp;&rho;) prediction.</p>
             <p><strong>Contribution:</strong> a tested rule of thumb for when to move off SQLite, based on data instead of folklore.</p>
           </div>
         </div>
 
         <div class="section-heading">Primary sources</div>
         <ul class="ms-reading">
-          <li><a href="https://www.sqlite.org/atomiccommit.html" target="_blank" rel="noopener">Atomic Commit In SQLite</a>: the rollback journal, step by step (lesson 2).</li>
+          <li><a href="https://www.sqlite.org/foreignkeys.html" target="_blank" rel="noopener">SQLite Foreign Key Support</a>: enforcement, actions and deferred constraints (lesson 1).</li>
+          <li><a href="https://www.sqlite.org/atomiccommit.html" target="_blank" rel="noopener">Atomic Commit In SQLite</a>: the rollback journal, step by step (lesson 3).</li>
           <li><a href="https://www.sqlite.org/lockingv3.html" target="_blank" rel="noopener">File Locking And Concurrency In SQLite Version 3</a>: the five lock states.</li>
-          <li><a href="https://www.sqlite.org/wal.html" target="_blank" rel="noopener">Write-Ahead Logging</a> and <a href="https://www.sqlite.org/isolation.html" target="_blank" rel="noopener">Isolation In SQLite</a> (lesson 3).</li>
+          <li><a href="https://www.sqlite.org/wal.html" target="_blank" rel="noopener">Write-Ahead Logging</a> and <a href="https://www.sqlite.org/isolation.html" target="_blank" rel="noopener">Isolation In SQLite</a> (lesson 4).</li>
           <li><a href="https://www.sqlite.org/c3ref/busy_handler.html" target="_blank" rel="noopener">sqlite3_busy_handler</a>: when SQLite refuses to wait, and why.</li>
-          <li><a href="https://www.sqlite.org/fileformat2.html" target="_blank" rel="noopener">Database File Format</a>: pages, cells and B-trees, byte by byte (lesson 1).</li>
-          <li><a href="https://www.sqlite.org/queryplanner-ng.html" target="_blank" rel="noopener">The Next-Generation Query Planner</a> (lesson 4).</li>
-          <li><a href="https://www.sqlite.org/lang_with.html" target="_blank" rel="noopener">The WITH Clause</a>: recursive query semantics (lesson 5).</li>
+          <li><a href="https://www.sqlite.org/fileformat2.html" target="_blank" rel="noopener">Database File Format</a>: pages, cells and B-trees, byte by byte (lesson 2).</li>
+          <li><a href="https://www.sqlite.org/queryplanner-ng.html" target="_blank" rel="noopener">The Next-Generation Query Planner</a> (lesson 5).</li>
+          <li><a href="https://www.sqlite.org/lang_with.html" target="_blank" rel="noopener">The WITH Clause</a>: recursive query semantics (lesson 6).</li>
         </ul>
         <div class="section-heading">Books and papers</div>
         <ul class="ms-reading">
+          <li>Codd, &ldquo;A Relational Model of Data for Large Shared Data Banks&rdquo;, Communications of the ACM 13(6), 1970.</li>
           <li>Hellerstein, Stonebraker &amp; Hamilton, <em>Architecture of a Database System</em>, Foundations and Trends in Databases, 2007.</li>
           <li>Gray &amp; Reuter, <em>Transaction Processing: Concepts and Techniques</em>, Morgan Kaufmann, 1993.</li>
           <li>Berenson et al., &ldquo;A Critique of ANSI SQL Isolation Levels&rdquo;, SIGMOD 1995.</li>

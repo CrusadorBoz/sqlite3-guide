@@ -11,9 +11,9 @@
      NOTE: this file is served RAW by nginx (alias, see nginx-bozcode.conf
      location /examples/sqlite3/sqlite3-guide/) and is NOT rendered by
      Django, so no Django template syntax may appear anywhere in it. -->
-<link rel="stylesheet" href="/static/css/fonts.css?v=2">
-<link rel="stylesheet" href="sqlite3-download.css?v=3">
-<link rel="stylesheet" href="/static/css/back-button.css?v=1">
+<link rel="stylesheet" href="/static/css/fonts.559bd309bb62.css">
+<link rel="stylesheet" href="/static/css/db-guide.1bdd1b8af2c1.css">
+<link rel="stylesheet" href="/static/css/back-button.d4632cb98ad3.css">
 </head>
 <body>
 
@@ -106,7 +106,7 @@
         Select your OS:
       </div>
       <div class="os-select-inner">
-        <select class="os-select" id="osSelect">
+        <select class="os-select" id="osSelect" aria-label="Operating system">
           <option value="windows">🪟 Windows</option>
           <option value="mac">🍎 macOS</option>
           <option value="linux">🐧 Linux</option>
@@ -896,6 +896,8 @@ sqlite3 --version</code></div>
 
 </div><!-- /wp-main -->
 
-<script src="sqlite3-download.js?v=2"></script>
+<script type="application/json" id="quiz-data" data-subject="SQLite3">[{"q":"SQLite3 stores an entire database in which type of structure?","options":["A dedicated server process","A single file on disk","Multiple files spread across directories","A network socket connection"],"answer":1,"explain":"SQLite stores the entire database — tables, indexes, triggers, and views — in a single ordinary disk file. This is one of its defining features (serverless, single-file)."},{"q":"Which dot-command lists all tables in the currently open SQLite database?","options":[".show",".list",".tables",".schema"],"answer":2,"explain":".tables lists all the tables in the current database. .schema (without arguments) shows the CREATE statements for all objects, not just a list of table names."},{"q":"What happens if you run <code class=\"sq-mono\">sqlite3 newdb.db<\/code> and newdb.db does not already exist?","options":["SQLite throws an error","SQLite creates the file automatically","SQLite opens an in-memory database instead","SQLite prompts you to confirm creation"],"answer":1,"explain":"When you specify a filename that doesn't exist, SQLite creates it automatically the moment you make a change to the database. If you quit without writing any data, the file is not saved."},{"q":"Which SQL command would you use to add a new column called <code class=\"sq-mono\">phone TEXT<\/code> to an existing <code class=\"sq-mono\">users<\/code> table?","options":["ADD COLUMN users phone TEXT;","ALTER TABLE users ADD COLUMN phone TEXT;","UPDATE TABLE users ADD phone TEXT;","MODIFY TABLE users INSERT COLUMN phone TEXT;"],"answer":1,"explain":"The correct syntax is ALTER TABLE tablename ADD COLUMN columnname datatype;. SQLite can also rename a table (since 3.2), rename a column (3.25) and drop a column (3.35), but it cannot change the type of an existing column."},{"q":"What does the SQL wildcard <code class=\"sq-mono\">%<\/code> represent in a LIKE clause?","options":["Exactly one character","Any single digit","Zero or more characters of any kind","A literal percent symbol only"],"answer":2,"explain":"In a LIKE clause, % matches zero or more characters of any type. For example, 'G%' matches 'Gordon', 'Go', or 'G' alone. The underscore _ matches exactly one character."},{"q":"You want to permanently remove the entire <code class=\"sq-mono\">orders<\/code> table, including its structure and all data. Which command does this?","options":["DELETE FROM orders;","REMOVE TABLE orders;","TRUNCATE TABLE orders;","DROP TABLE orders;"],"answer":3,"explain":"DROP TABLE removes the table structure and all of its data permanently. DELETE FROM orders; removes all rows but leaves the table structure intact. SQLite does not support TRUNCATE."},{"q":"Which of these is NOT a valid SQLite column type affinity?","options":["TEXT","BLOB","BOOLEAN","REAL"],"answer":2,"explain":"SQLite's five storage classes are NULL, INTEGER, REAL, TEXT, and BLOB. There is no native BOOLEAN type — SQLite stores booleans as integers (0 for false, 1 for true). It will accept BOOLEAN as a column type declaration but stores values as integers."},{"q":"What is the purpose of the <code class=\"sq-mono\">.headers on<\/code> dot-command?","options":["Enables foreign key constraints","Shows column names above query results","Displays the database file headers","Turns on syntax highlighting"],"answer":1,"explain":"By default, SQLite's shell outputs query results without column names. Running .headers on makes the shell print column names as a header row above your query results, which is much easier to read."},{"q":"Which keyword prevents duplicate values in a column when defining a table?","options":["PRIMARY","DISTINCT","UNIQUE","NOT NULL"],"answer":2,"explain":"The UNIQUE constraint ensures no two rows can have the same value in that column (or combination of columns). NOT NULL prevents empty values but allows duplicates. PRIMARY KEY is both UNIQUE and NOT NULL, but it's a special constraint for the row identifier."},{"q":"If you run <code class=\"sq-mono\">UPDATE users SET age = 99;<\/code> with no WHERE clause, what happens?","options":["SQLite throws an error requiring a WHERE clause","Only the first row is updated","Every row in the users table has its age set to 99","Only rows where age is NULL are updated"],"answer":2,"explain":"Without a WHERE clause, an UPDATE statement affects every single row in the table. This is a common and dangerous mistake — always double-check that your UPDATE has a WHERE clause when you only intend to update specific rows."}]</script>
+<script src="/static/js/db-guide.94839dbc2ab9.js"></script>
+<script src="/static/js/scroll-focus.9d8cd92d0b76.js" defer></script>
 </body>
 </html>
